@@ -1,6 +1,5 @@
 import customtkinter as ctk
 from PIL import Image
-import os
 
 class Dashboard(ctk.CTk):
     def __init__(self):
@@ -8,16 +7,14 @@ class Dashboard(ctk.CTk):
         self.title("Dashboard")
         self.geometry("1200x600")
 
-        # === Main Layout Frame ===
         main_frame = ctk.CTkFrame(master=self)
         main_frame.pack(fill="both", expand=True)
 
-        main_frame.grid_columnconfigure(0, weight=0)   # Sidebar
-        main_frame.grid_columnconfigure(1, weight=1)   # Main content
-        main_frame.grid_rowconfigure(0, weight=0)      # Top bar
-        main_frame.grid_rowconfigure(1, weight=1)      # Content below top bar
+        main_frame.grid_columnconfigure(0, weight=0)   
+        main_frame.grid_columnconfigure(1, weight=1)   
+        main_frame.grid_rowconfigure(0, weight=0)      
+        main_frame.grid_rowconfigure(1, weight=1)      
 
-        # === Top Bar ===
         top_bar = ctk.CTkFrame(master=main_frame, height=60)
         top_bar.grid(row=0, column=0, columnspan=2, sticky="new", pady = 10)
         top_bar.grid_propagate(False)
@@ -27,11 +24,9 @@ class Dashboard(ctk.CTk):
         platform_title = ctk.CTkLabel(top_bar, text="BidMasters", font=("Arial", 20, "bold"))
         platform_title.grid(row=0, column=0, padx=20, pady=10, sticky="w")
 
-        # Load account icon
         icon_path = "assets/user_icon.png"
         icon_image = ctk.CTkImage(Image.open(icon_path), size=(32, 32))
         
-
         account_btn = ctk.CTkButton(
             master=top_bar,
             image=icon_image,
@@ -45,7 +40,6 @@ class Dashboard(ctk.CTk):
         )
         account_btn.grid(row=0, column=1, padx=20, pady=10, sticky="e")
 
-        # === Sidebar under Top Bar (row=1) ===
         sidebar_container = ctk.CTkFrame(master=main_frame)
         sidebar_container.grid(row=1, column=0, sticky="ns")
 
@@ -70,7 +64,6 @@ class Dashboard(ctk.CTk):
         sidebar_canvas.pack(side="left", fill="y", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # === Sidebar Buttons ===
         for i in range(20):
             ctk.CTkButton(
                 master=scrollable_frame,
@@ -79,12 +72,11 @@ class Dashboard(ctk.CTk):
                 anchor="w"
             ).pack(pady=10, padx=0)
 
-        # === Main Content Area ===
         content_area = ctk.CTkFrame(master=main_frame, fg_color="#1a1a1a")
         content_area.grid(row=1, column=1, sticky="nsew")
         ctk.CTkLabel(content_area, text="Dashboard Content Here", font=("Arial", 16)).pack(pady=30)
 
-# Run for demo
+# FOR TESTING PURPOSES ONLY
 if __name__ == '__main__':
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("green")
