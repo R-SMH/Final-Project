@@ -1,1 +1,0 @@
-print("Life sucks")
