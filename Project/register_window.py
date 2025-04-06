@@ -66,7 +66,7 @@ class RegisterWindow(ctk.CTkToplevel):
             return
         '''
         # this is where your function should be
-        # login_status = Caden_will_import_this(first, last, email, dob, password, confirm)
+        # Caden_will_use_this(first, last, email, dob, password, confirm)
         '''
         
         # Success placeholder
