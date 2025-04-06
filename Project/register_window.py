@@ -64,7 +64,11 @@ class RegisterWindow(ctk.CTkToplevel):
         if password != confirm:
             messagebox.showerror("Error", "Passwords do not match.")
             return
-
+        '''
+        # this is where your function should be
+        # login_status = Caden_will_import_this(first, last, email, dob, password, confirm)
+        '''
+        
         # Success placeholder
         messagebox.showinfo("Success", "Registration submitted! (DB pending)")
         self.destroy()
