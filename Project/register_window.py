@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox
+import mysql.connector
 
 class RegisterWindow(ctk.CTkToplevel):
     def __init__(self, master=None):
@@ -14,6 +15,8 @@ class RegisterWindow(ctk.CTkToplevel):
         self.columnconfigure(0, weight=1)
         
         ctk.CTkLabel(self, text="Register", font=("Arial", 22, "bold")).pack(pady=(20, 10))
+        self.entry_Username = ctk.CTkEntry(self, placeholder_text="Username")
+        self.entry_Username.pack(pady=8, padx=40)
 
         self.entry_first = ctk.CTkEntry(self, placeholder_text="First Name")
         self.entry_first.pack(pady=8, padx=40)
@@ -24,7 +27,7 @@ class RegisterWindow(ctk.CTkToplevel):
         self.entry_email = ctk.CTkEntry(self, placeholder_text="Email")
         self.entry_email.pack(pady=8, padx=40)
         
-        self.entry_dob = ctk.CTkEntry(self, placeholder_text="DOB (MM/DD/YYYY)")
+        self.entry_dob = ctk.CTkEntry(self, placeholder_text="DOB (YYYY/MM/DD)")
         self.entry_dob.pack(pady=8, padx=40)
 
         self.entry_password = ctk.CTkEntry(self, placeholder_text="Password", show="*")
@@ -54,9 +57,10 @@ class RegisterWindow(ctk.CTkToplevel):
         dob = self.entry_dob.get().strip()
         password = self.entry_password.get()
         confirm = self.entry_confirm.get()
+        username = self.entry_Username.get()
 
         # Validate fields
-        if not all([first, last, email, dob, password, confirm]):
+        if not all([first, last, email, dob, password, confirm, username]):
             messagebox.showerror("Error", "All fields are required.")
             return
         
@@ -64,11 +68,46 @@ class RegisterWindow(ctk.CTkToplevel):
         if password != confirm:
             messagebox.showerror("Error", "Passwords do not match.")
             return
+        
+        if self.register_to_db(email, username, first, last, password, dob):
+            messagebox.showinfo("Success", "Registration successful!")
+            self.destroy()
+        else:
+            messagebox.showerror("Error", "Registration failed. Please try again.")
         '''
         # this is where your function should be
-        # Caden_will_use_this(first, last, email, dob, password, confirm)
+        # login_status = Caden_will_import_this(first, last, email, dob, password, confirm, username)
         '''
-        
+        '''
         # Success placeholder
         messagebox.showinfo("Success", "Registration submitted! (DB pending)")
         self.destroy()
+        '''
+
+    def register_to_db(self, email, username, first, last, password, dob):
+        try:
+            db = mysql.connector.connect(
+                host = "138.47.136.170",
+                user = "otheruser",
+                passwd = "GroupProjectPassword",
+                database = "AuctionDB"
+            )
+            cursor = db.cursor()
+
+            query = "INSERT INTO users(email, username,first_name, last_name, password, dob) VALUES (%s, %s, %s, %s, %s, %s)"
+            values = (email, username, first, last,password, dob )
+            cursor.execute(query, values)
+            db.commit()
+
+            print("User registered successfully!")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Database Error: {err}")
+            return False
+
+        
+if __name__ == "__main__":
+    root = ctk.CTk()
+    root.withdraw()  # Hide the root window
+    RegisterWindow(master=root)
+    root.mainloop()
