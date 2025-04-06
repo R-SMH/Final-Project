@@ -9,29 +9,32 @@ themeColor = "green"
 open_image = Image.open("assets/RandomPhoto.png")
 cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, size = (950, 600))
 
-# Main Application Window (to open after login)
-def open_main_window():
-    Dashboard()
+# Placeholder for Caden
+def Caden_will_Pass_them(user_id, password):
+    return True  # Placeholder for actual login logic
 
 # Login Logic
 def login():
     user_id = entry_id.get()
-    password = entry_password.
+    password = entry_password.get()
     if user_id and password:
-        # login_status = Caden_will_Pass_them(user_id, password)
-        '''
+
+        login_status = Caden_will_Pass_them(user_id, password)
+
         if login_status:
-            # app.withdraw()  # Hide login window
             app.destroy()
             Dashboard(user_id).mainloop()
             # open_main_window()
-
         else :
             messagebox.showerror("Login Failed", "Please check your login credentials")
-        '''
+        
     else:
         messagebox.showerror("Login Failed", "Please enter both ID and password.")
 
+# Main Application Window (to open after login)
+def open_main_window():
+    Dashboard()
+    
 # Register Logic
 def register():
     RegisterWindow(app)
@@ -65,7 +68,7 @@ login_frame.configure(width=300, height=350)
 
 ctk.CTkLabel(master=login_frame, text="Login", font=("Arial", 20)).pack(pady=10)
 
-entry_id = ctk.CTkEntry(master=login_frame, placeholder_text="User ID")
+entry_id = ctk.CTkEntry(master=login_frame, placeholder_text="Username")
 entry_id.pack(pady=10)
 
 entry_password = ctk.CTkEntry(master=login_frame, placeholder_text="Password", show="*")
