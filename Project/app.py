@@ -3,15 +3,53 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 from dashboard_ui import Dashboard
 from register_window import RegisterWindow
-
+import mysql.connector
 
 themeColor = "green"
 open_image = Image.open("assets/RandomPhoto.png")
 cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, size = (950, 600))
 
+
+
 # Placeholder for Caden
 def Caden_will_Pass_them(user_id, password):
-    return True  # Placeholder for actual login logic
+    try:
+        db = mysql.connector.connect(
+            host = "138.47.136.170",
+            user = "otheruser",
+            passwd = "GroupProjectPassword",
+            database = "AuctionDB")
+
+        cursor = db.cursor()
+        uname = entry_id.get()
+        pword = entry_password.get()
+
+        query = "SELECT * FROM Users WHERE username = %s AND password = %s"
+        cursor.execute(query, (uname, pword))
+        result = cursor.fetchone()
+
+        if result:
+            messagebox.showinfo("Login Success", f"Welcome, {result[3]}!")  # First name
+            log_login(cursor, db, uname, pword, result[0])  # Log attempt in Login table
+            return True
+        else:
+            messagebox.showerror("Login Failed", "Invalid credentials.")
+            return False
+    except mysql.connector.Error as err:
+        print("Error connecting to database:", err)
+        exit()
+
+def log_login(cursor, db, username, password, user_id):
+    try:
+        insert_query = "INSERT INTO Login (username, password, user_id) VALUES (%s, %s, %s)"
+        cursor.execute(insert_query, (username, password, user_id))
+        db.commit()
+    except mysql.connector.Error as err:
+        print(f"Error logging login attempt: {err}")
+
+
+
+    #return True  # Placeholder for actual login logic
 
 # Login Logic
 def login():
