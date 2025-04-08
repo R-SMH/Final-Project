@@ -45,7 +45,8 @@ class Add_Auction_Window(ctk.CTkToplevel):
             # ========== Database Connection Using JSON - For Testing Purposes ==========
             def save_auction_to_database(data):
                 # === Placeholder for MySQL INSERT ===
-                # Caden: Remove everything below and save into your database as 
+                # Caden: Remove everything below and write something that would 
+                # save the 'data' dictionary into your database  
 
                 try:
                     with open("sample_data.json", "r") as f:
