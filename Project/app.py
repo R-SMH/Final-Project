@@ -10,7 +10,6 @@ open_image = Image.open("assets/RandomPhoto.png")
 cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, size = (950, 600))
 
 
-
 # Placeholder for Caden
 def Caden_will_Pass_them(user_id, password):
     try:
@@ -82,7 +81,7 @@ def forgot_password():
     messagebox.showinfo("Forgot Password", "Password reset instructions will be sent to your email.")
 
 # Root Login Window
-ctk.set_appearance_mode("system")  # Options: "light", "dark", "system"
+ctk.set_appearance_mode("light")  # Options: "light", "dark", "system"
 ctk.set_default_color_theme(themeColor)
 
 app = ctk.CTk()
