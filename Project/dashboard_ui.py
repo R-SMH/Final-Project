@@ -61,14 +61,6 @@ class Dashboard(ctk.CTk):
         scrollable_frame = ctk.CTkFrame(master=sidebar_canvas)
         scroll_window = sidebar_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
 
-        # def resize_scroll_region(event):
-        #     sidebar_canvas.itemconfig(scroll_window, width=event.width)
-
-        # scrollable_frame.bind(
-        #     "<Configure>", lambda e: sidebar_canvas.configure(scrollregion=sidebar_canvas.bbox("all"))
-        # )
-        # sidebar_canvas.bind("<Configure>", resize_scroll_region)
-
         sidebar_canvas.configure(width=250)
 
         sidebar_canvas.pack(side="left", fill="y", expand=True)
@@ -149,7 +141,7 @@ class Dashboard(ctk.CTk):
         main_frame.grid_columnconfigure(1, weight=1)  # Let column 1 expand
 
         # Wrapper to control width
-        content_wrapper = ctk.CTkFrame(master=auction_section, fg_color="transparent")
+        content_wrapper = ctk.CTkFrame(master=auction_section, fg_color="transparent", width = 800)
         content_wrapper.grid(row=1, column=0, sticky="n", pady=(0, 10))
         content_wrapper.grid_propagate(1)
 
@@ -171,7 +163,7 @@ class Dashboard(ctk.CTk):
 
         # === Scrollable Container ===
         scroll_container = ctk.CTkFrame(master=auction_section)
-        scroll_container.grid(row=1, column=0, sticky="nsw")
+        scroll_container.grid(row=1, column=0, sticky="nsew")
         scroll_container.grid_rowconfigure(0, weight=1)
         scroll_container.grid_columnconfigure(0, weight=1)
 
@@ -214,7 +206,7 @@ class Dashboard(ctk.CTk):
 
         sample_auctions = self.load_auctions()
 
-        columns = 1
+        columns = 3
         for index, auction in enumerate(sample_auctions):
             row = index // columns
             col = index % columns

@@ -19,5 +19,11 @@
         "time_left": "5h 47m",
         "status": "Active",
         "image": "assets/phone.jpg"
+    },
+    {
+        "Name": "Car",
+        "price": "1010",
+        "time_left": "7",
+        "image": "D:/Classes/CustomTkinter/Project/assets/sampleImage_1.jpg"
     }
 ]
