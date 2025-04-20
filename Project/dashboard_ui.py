@@ -226,7 +226,35 @@ class Dashboard(ctk.CTk):
     def load_auctions(self):
         with open("sample_data.json", "r") as f:
             return json.load(f)
+        
+
+
     def open_profile_window_func(self):
+
+        user_data = {
+            "username": "Shuvo",
+            "user_id": "123456",
+            "first_name": "Shreyastha",
+            "last_name": "Banik",
+            "dob": "2006-03-10",
+            "balance": self.current_balance
+        }
+        try:
+            with open("profile_data.json", "r") as f:
+                saved_data = json.load(f)
+            user_data.update(saved_data)
+        except FileNotFoundError:
+            pass
+
+        def handle_profile_save(updated_data):
+            self.current_balance = updated_data["balance"]
+            if hasattr(self, "balance_summary_label"):
+                self.balance_summary_label.configure(text=f"$ {self.current_balance:.2f}")
+            print("Profile updated:", updated_data)
+
+        ProfileWindow(self, user_data, on_save=handle_profile_save).grab_set()
+
+    '''def open_profile_window_func(self):
         user_data = {
             "username": "shreyastha18",
             "user_id": "U123456",
@@ -243,7 +271,7 @@ class Dashboard(ctk.CTk):
             print("Profile updated:", updated_data)
 
         ProfileWindow(self, user_data, on_save=handle_profile_save).grab_set()
-
+'''
     def render_auction_cards(self):
         for widget in self.scrollable_list.winfo_children():
             widget.destroy()
