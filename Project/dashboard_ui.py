@@ -4,6 +4,7 @@ import os
 import json
 from wallet_ui import *  # Assuming wallet_ui.py contains the WalletWindow class
 from profile_window import ProfileWindow
+from auction_button import create_auction_button
 
 current_balance = 1000  # Placeholder for current balance, replace with actual value
 
@@ -13,16 +14,16 @@ class Dashboard(ctk.CTk):
         self.current_balance = current_balance 
         self.title("Dashboard")
         self.geometry("1200x600")
-        main_frame = ctk.CTkFrame(master=self)
-        main_frame.pack(fill="both", expand=True)
-        main_frame.grid_columnconfigure(0, weight=0)   # Sidebar
-        main_frame.grid_columnconfigure(1, weight=1)   # Main content
-        main_frame.grid_rowconfigure(0, weight=0)  # Top bar
-        main_frame.grid_rowconfigure(1, weight=0)  # Summary label
-        main_frame.grid_rowconfigure(2, weight=0)  # Summary cards
-        main_frame.grid_rowconfigure(3, weight=1)  # Auction section
+        self.main_frame = ctk.CTkFrame(master=self)
+        self.main_frame.pack(fill="both", expand=True)
+        self.main_frame.grid_columnconfigure(0, weight=0)   # Sidebar
+        self.main_frame.grid_columnconfigure(1, weight=1)   # Main content
+        self.main_frame.grid_rowconfigure(0, weight=0)  # Top bar
+        self.main_frame.grid_rowconfigure(1, weight=0)  # Summary label
+        self.main_frame.grid_rowconfigure(2, weight=0)  # Summary cards
+        self.main_frame.grid_rowconfigure(3, weight=1)  # Auction section
         
-        self.top_bar = ctk.CTkFrame(master=main_frame, height=70)
+        self.top_bar = ctk.CTkFrame(master=self.main_frame, height=70)
         self.top_bar.grid(row=0, column=0, columnspan=2, sticky="new")
         self.top_bar.grid_propagate(False)
         self.top_bar.grid_columnconfigure(0, weight=1)
@@ -47,7 +48,7 @@ class Dashboard(ctk.CTk):
         )
         account_btn.grid(row=0, column=1, padx=20, pady=10, sticky="e")
 
-        sidebar_container = ctk.CTkFrame(master=main_frame)
+        sidebar_container = ctk.CTkFrame(master=self.main_frame)
         sidebar_container.grid(row=1, column=0, rowspan=3, sticky="ns")
 
         sidebar_canvas = ctk.CTkCanvas(sidebar_container, bg='#2b2b2b', highlightthickness=0, bd=0)
@@ -57,13 +58,24 @@ class Dashboard(ctk.CTk):
         sidebar_canvas.configure(width=250)
         sidebar_canvas.pack(side="left", fill="y", expand=True)
 
-        def open_add_item_window():
-            from add_auction import Add_Auction_Window
-            Add_Auction_Window(self, on_submit=self.render_auction_cards)
 
         buttons = [
-            "Home", "Auction", "Expiring Auctions", "Silent Auction", "Mystery Auction",
+            "Expiring Auctions", "Silent Auction", "Mystery Auction",
         ]
+        
+        ctk.CTkButton(
+                master=scrollable_frame,
+                text="Home",
+                width=130,
+                anchor="w",
+                command = self.load_home_view
+            ).pack(pady=3, padx=(5, 5))
+
+
+        auction_btn = create_auction_button(scrollable_frame, self)
+        auction_btn.pack(pady=3, padx=(5, 5))
+        
+        
         for bt in buttons:
             ctk.CTkButton(
                 master=scrollable_frame,
@@ -72,16 +84,13 @@ class Dashboard(ctk.CTk):
                 anchor="w"
             ).pack(pady=3, padx=(5, 5))
 
-        def open_wallet_ui():
-            Wallet = WalletWindow(self, current_balance=self.current_balance, on_balance_update=self.update_balance)
-            Wallet.grab_set()
 
         wallet_button = ctk.CTkButton(
             master=scrollable_frame,
             text="Wallet",
             width=130,
             anchor="w",
-            command=open_wallet_ui
+            command=self.open_wallet_ui
         )
         wallet_button.pack(pady=3, padx=(5, 5))
 
@@ -90,28 +99,43 @@ class Dashboard(ctk.CTk):
             text="➕ Add Auction Item",
             width=130,
             anchor="w",
-            command=open_add_item_window
+            command=self.open_add_item_window
         ).pack(pady=15, padx=0)
 
-        summary_label = ctk.CTkLabel(master=main_frame, text="Summary", font=("Arial", 18, "bold"))
-        summary_label.grid(row=1, column=1, sticky="nw", padx=10, pady=(10, 0))
+        self.load_home_view(user_id)
 
-        summary_frame = ctk.CTkFrame(master=main_frame, height=100)
-        summary_frame.grid(row=2, column=1, sticky="new", padx=10, pady=(5, 0))
-        summary_frame.grid_propagate(False)
-        summary_frame.configure(height=100)
-        summary_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-        summary_frame.grid_rowconfigure(0, weight=1)
+    def load_home_view(self, user_id = None):
 
+        # Clear previous content first (if needed)
+        for widget in self.winfo_children():
+            if isinstance(widget, ctk.CTkFrame):
+                for child in widget.winfo_children():
+                    info = child.grid_info()
+                    if int(info.get("column", -1)) == 1 and int(info.get("row", -1)) >= 1:
+                        child.grid_forget()
+            
+        self.summary_label = ctk.CTkLabel(master=self.main_frame, text="Summary", font=("Arial", 18, "bold"))
+        self.summary_label.grid(row=1, column=1, sticky="nw", padx=10, pady=(10, 0))
+
+        self.summary_frame = ctk.CTkFrame(master=self.main_frame, height=100)
+        self.summary_frame.grid(row=2, column=1, sticky="new", padx=10, pady=(5, 0))
+        self.summary_frame.grid_propagate(False)
+        self.summary_frame.configure(height=100)
+        self.summary_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        self.summary_frame.grid_rowconfigure(0, weight=1)
+
+        """
         def Caden_func(username):
             usm = username
             return list((current_balance, 5, 3, 1500))
+            """
         
         # Call the function to get summary data
-        summary_data = Caden_func(user_id)
-        summary_data = self.get_summary_data(user_id)
+        # summary_data = Caden_func(user_id)
+        self.user_id = user_id
+        summary_data = self.get_summary_data(self.user_id)
 
-        display_data = [
+        self.display_data = [
             ("Balance", f"$ {summary_data[0]}"),
             ("Active Bids", f"{summary_data[1]}"),
             ("Auctions Won", f"{summary_data[2]}"),
@@ -120,8 +144,8 @@ class Dashboard(ctk.CTk):
 
         self.balance_summary_label = None  # Add this to store the reference
 
-        for i, (label, value) in enumerate(display_data):
-            card = ctk.CTkFrame(master=summary_frame, corner_radius=10)
+        for i, (label, value) in enumerate(self.display_data):
+            card = ctk.CTkFrame(master=self.summary_frame, corner_radius=10)
             card.grid(row=0, column=i, padx=10, pady=10, sticky="nsew")
 
             ctk.CTkLabel(card, text=label, font=("Arial", 14)).pack(pady=(10, 5))
@@ -132,49 +156,49 @@ class Dashboard(ctk.CTk):
             else:
                 ctk.CTkLabel(card, text=value, font=("Arial", 18, "bold")).pack(expand=True)
 
-        auction_section = ctk.CTkFrame(master=main_frame, fg_color="transparent")
-        auction_section.grid(row=3, column=1, sticky="nsw", padx=5, pady=(10, 20))
-        auction_section.grid_rowconfigure(1, weight=1)
-        auction_section.grid_columnconfigure(0, weight=1)
-        auction_section.grid_columnconfigure(1, weight=0)
+        self.auction_section = ctk.CTkFrame(master=self.main_frame, fg_color="transparent")
+        self.auction_section.grid(row=3, column=1, sticky="nsw", padx=5, pady=(10, 20))
+        self.auction_section.grid_rowconfigure(1, weight=1)
+        self.auction_section.grid_columnconfigure(0, weight=1)
+        self.auction_section.grid_columnconfigure(1, weight=0)
 
-        main_frame.grid_rowconfigure(3, weight=1)  # Let row 3 expand
-        main_frame.grid_columnconfigure(1, weight=1)  # Let column 1 expand
+        self.main_frame.grid_rowconfigure(3, weight=1)  # Let row 3 expand
+        self.main_frame.grid_columnconfigure(1, weight=1)  # Let column 1 expand
 
-        content_wrapper = ctk.CTkFrame(master=auction_section, fg_color="transparent", width=800)
-        content_wrapper.grid(row=1, column=0, sticky="n", pady=(0, 10))
-        content_wrapper.grid_propagate(1)
+        self.content_wrapper = ctk.CTkFrame(master=self.auction_section, fg_color="transparent", width=800)
+        self.content_wrapper.grid(row=1, column=0, sticky="n", pady=(0, 10))
+        self.content_wrapper.grid_propagate(1)
 
-        auction_label = ctk.CTkLabel(master=auction_section, text="Your Auctions", font=("Arial", 18, "bold"))
-        auction_label.grid(row=0, column=0, sticky="w", pady=(0, 5), padx=5)
+        self.auction_label = ctk.CTkLabel(master=self.auction_section, text="Your Auctions", font=("Arial", 18, "bold"))
+        self.auction_label.grid(row=0, column=0, sticky="w", pady=(0, 5), padx=5)
 
         # Add Auction Button
-        add_auction_btn = ctk.CTkButton(
-            master=auction_section,
+        self.add_auction_btn = ctk.CTkButton(
+            master=self.auction_section,
             text="Add Auction",
             width=60,
             height=30,
             corner_radius=8,
-            command=open_add_item_window  # Replace with your actual function
+            command=self.open_add_item_window  # Replace with your actual function
         )
-        add_auction_btn.grid(row=0, column=0, sticky="e", pady=(0, 0), padx=(0, 10))
+        self.add_auction_btn.grid(row=0, column=0, sticky="e", pady=(0, 0), padx=(0, 10))
 
-        scroll_container = ctk.CTkFrame(master=auction_section)
-        scroll_container.grid(row=1, column=0, sticky="nsew")
-        scroll_container.grid_rowconfigure(0, weight=1)
-        scroll_container.grid_columnconfigure(0, weight=1)
+        self.scroll_container = ctk.CTkFrame(master=self.auction_section)
+        self.scroll_container.grid(row=1, column=0, sticky="nsew")
+        self.scroll_container.grid_rowconfigure(0, weight=1)
+        self.scroll_container.grid_columnconfigure(0, weight=1)
 
-        auction_canvas = ctk.CTkCanvas(scroll_container, bg="#2b2b2b", highlightthickness=0)
-        auction_scrollbar = ctk.CTkScrollbar(master=scroll_container, orientation="vertical", command=auction_canvas.yview)
+        self.auction_canvas = ctk.CTkCanvas(self.scroll_container, bg="#2b2b2b", highlightthickness=0)
+        self.auction_scrollbar = ctk.CTkScrollbar(master=self.scroll_container, orientation="vertical", command=self.auction_canvas.yview)
 
-        self.scrollable_list = ctk.CTkFrame(master=auction_canvas)
-        scroll_window = auction_canvas.create_window((0, 0), window=self.scrollable_list, anchor="nw")
+        self.scrollable_list = ctk.CTkFrame(master=self.auction_canvas)
+        self.scroll_window = self.auction_canvas.create_window((0, 0), window=self.scrollable_list, anchor="nw")
         self.scrollable_list.bind(
-            "<Configure>", lambda e: auction_canvas.configure(scrollregion=auction_canvas.bbox("all"))
+            "<Configure>", lambda e: self.auction_canvas.configure(scrollregion=self.auction_canvas.bbox("all"))
         )
-        auction_canvas.configure(yscrollcommand=auction_scrollbar.set)
-        auction_canvas.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
-        auction_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.auction_canvas.configure(yscrollcommand=self.auction_scrollbar.set)
+        self.auction_canvas.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        self.auction_scrollbar.grid(row=0, column=1, sticky="ns")
 
         # Uncomment this function if you want to use it for loading auctions
         # def Caden_will_use_this_for_my_auctions(self, user_id):
@@ -182,7 +206,15 @@ class Dashboard(ctk.CTk):
         #         return json.load(f)
 
         self.render_auction_cards()
-
+        
+    def open_add_item_window(self):
+            from add_auction import Add_Auction_Window
+            Add_Auction_Window(self, on_submit=self.render_auction_cards)
+            
+    def open_wallet_ui(self):
+            Wallet = WalletWindow(self, current_balance=self.current_balance, on_balance_update=self.update_balance)
+            Wallet.grab_set()
+            
     def get_summary_data(self, username):
         return [self.current_balance, 5, 3, 1500]  # Use instance variable!
 
