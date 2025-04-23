@@ -11,32 +11,35 @@ cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, si
 
 
 # Placeholder for Caden
-def Caden_will_Pass_them(user_id, password):
+def Caden_will_Pass_them(username, password):
     try:
         db = mysql.connector.connect(
-            host = "138.47.136.170",
-            user = "otheruser",
-            passwd = "GroupProjectPassword",
-            database = "AuctionDB")
+            host="138.47.139.66",
+            user="otheruser",
+            passwd="GroupProjectPassword",
+            database="AuctionDB"
+        )
 
         cursor = db.cursor()
-        uname = entry_id.get()
-        pword = entry_password.get()
 
-        query = "SELECT * FROM Users WHERE username = %s AND password = %s"
-        cursor.execute(query, (uname, pword))
+        # Validate username and password
+        query = "SELECT user_id, first_name FROM Users WHERE username = %s AND password = %s"
+        cursor.execute(query, (username, password))
         result = cursor.fetchone()
 
         if result:
-            messagebox.showinfo("Login Success", f"Welcome, {result[3]}!")  # First name
-            log_login(cursor, db, uname, pword, result[0])  # Log attempt in Login table
-            return True
+            user_id = result[0]  # Fetch the user_id from the result
+            first_name = result[1]  # Fetch the first name for the welcome message
+            messagebox.showinfo("Login Success", f"Welcome, {first_name}!")
+            log_login(cursor, db, username, password, user_id)  # Log the login attempt
+            return user_id  # Return the user_id instead of True
         else:
             messagebox.showerror("Login Failed", "Invalid credentials.")
-            return False
+            return None
     except mysql.connector.Error as err:
         print("Error connecting to database:", err)
         exit()
+
 
 def log_login(cursor, db, username, password, user_id):
     try:
@@ -52,22 +55,18 @@ def log_login(cursor, db, username, password, user_id):
 
 # Login Logic
 def login():
-    user_id = entry_id.get()
-    password = entry_password.get()
-    if user_id and password:
+    username = entry_id.get()  # Get the username from the entry field
+    password = entry_password.get()  # Get the password from the entry field
 
-        # login_status = Caden_will_Pass_them(user_id, password)
-        login_status = 1
-        if login_status:
+    if username and password:
+        user_id = Caden_will_Pass_them(username, password)  # Fetch the user_id
+        if user_id:
             app.destroy()
-            Dashboard(user_id).mainloop()
-            # open_main_window()
-        else :
-            messagebox.showerror("Login Failed", "Please check your login credentials")
-        
+            Dashboard(user_id).mainloop()  # Pass the correct user_id to the Dashboard
+        else:
+            messagebox.showerror("Login Failed", "Please check your login credentials.")
     else:
-        messagebox.showerror("Login Failed", "Please enter both ID and password.")
-
+        messagebox.showerror("Login Failed", "Please enter both username and password.")
 # Main Application Window (to open after login)
 def open_main_window():
     Dashboard()
