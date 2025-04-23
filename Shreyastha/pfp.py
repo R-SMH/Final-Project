@@ -1,8 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from PIL import Image, ImageDraw, ImageTk
-import json
-import os
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -81,7 +79,6 @@ class ProfileWindow(ctk.CTkToplevel):
             self.image_label = ctk.CTkLabel(self.image_frame, text="[Image Not Found]", font=("Arial", 14, "italic"))
             self.image_label.pack()
 
-
     def toggle_edit_mode(self):
         if not self.edit_mode:
             self.edit_mode = True
@@ -97,17 +94,6 @@ class ProfileWindow(ctk.CTkToplevel):
                     if key == "balance":
                         val = float(val)
                     self.user_data[key] = val
-
-                self.user_data["profile_pic"] = self.profile_image_path  # Save the new profile picture path
-
-            # ✅ Save to JSON
-                with open("profile_data.json", "w") as f:
-                    json.dump({
-                        "username": self.user_data["username"],
-                        "first_name": self.user_data["first_name"],
-                        "last_name": self.user_data["last_name"],
-                        "profile_pic": self.profile_image_path
-                    }, f, indent=4)
 
                 if self.on_save:
                     self.on_save(self.user_data)
@@ -127,7 +113,6 @@ class ProfileWindow(ctk.CTkToplevel):
             except ValueError:
                 messagebox.showerror("Invalid Input", "Please enter a valid number for balance.")
 
-
     def change_profile_picture(self, event=None):
         file_path = filedialog.askopenfilename(
             filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")]
@@ -138,28 +123,16 @@ class ProfileWindow(ctk.CTkToplevel):
             self.load_profile_image()
 
 if __name__ == "__main__":
-    import os
-    import json
-
     root = ctk.CTk()
     root.withdraw()
 
-    if os.path.exists("profile_data.json"):
-        with open("profile_data.json", "r") as f:
-            saved_data = json.load(f)
-    else:
-        saved_data = {
-            "username": "SBA",
-            "first_name": "Shreyastha",
-            "last_name": "Banik",
-            "profile_pic": "assets/profile.png"
-        }
-
     sample_user = {
+        "username": "SBA",
         "user_id": "123456",
+        "first_name": "Shreyastha",
+        "last_name": "Banik",
         "dob": "2006-01-01",
-        "balance": "1000.00",
-        **saved_data
+        "balance": "1000.00"
     }
 
     def save_callback(data):
