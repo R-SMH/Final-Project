@@ -14,12 +14,17 @@ class WalletWindow(ctk.CTkToplevel):
         self.current_balance = current_balance
         self.on_balance_update = on_balance_update
 
+
+        # Ensure the window pops up on top
+        self.lift()  # Bring the window to the front
+        self.attributes("-topmost", True)  # Make it stay on top temporarily
+
         print(f"Initializing WalletWindow with user_id={self.user_id}")  # Debugging
 
         # Fetch the user's actual balance from the database
         try:
             conn = mysql.connector.connect(
-                host="138.47.139.66",
+                host= "138.47.137.116",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -82,7 +87,7 @@ class WalletWindow(ctk.CTkToplevel):
         # Update the database
         try:
             conn = mysql.connector.connect(
-                host="138.47.139.66",
+                host="138.47.137.116",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -94,13 +99,28 @@ class WalletWindow(ctk.CTkToplevel):
                 cursor.execute("UPDATE users SET balance = balance + %s WHERE user_id = %s", (amount, self.user_id))
                 conn.commit()
 
-                # Query 2: Insert the transaction into the wallet table
-                cursor.execute(
-                    "INSERT INTO wallet (user_id, Balance, CreditCardNumber, cvv) VALUES (%s, %s, %s, %s)",
-                    (self.user_id, amount, card_number, cvv)
-                )
-                conn.commit()
+                # Query 2: Check if a row exists for the user in the wallet table
+                try:
+                    cursor.execute("SELECT * FROM wallet WHERE user_id = %s", (self.user_id,))
+                    wallet_row = cursor.fetchone()
 
+                    if wallet_row:
+                        # If a row exists, update the existing row
+                        cursor.execute(
+                            "UPDATE wallet SET Balance = Balance + %s, CreditCardNumber = %s, cvv = %s WHERE user_id = %s",
+                            (amount, card_number, cvv, self.user_id)
+                        )
+                    else:
+                        # If no row exists, insert a new row
+                        cursor.execute(
+                            "INSERT INTO wallet (user_id, Balance, CreditCardNumber, cvv) VALUES (%s, %s, %s, %s)",
+                            (self.user_id, amount, card_number, cvv)
+                        )
+                    conn.commit()
+                except mysql.connector.Error as e:
+                    messagebox.showerror("Database Error", f"An error occurred while updating the wallet: {e}")
+                    return
+                
                 # Query 3: Fetch the updated balance from the database
                 cursor.execute("SELECT balance FROM users WHERE user_id = %s", (self.user_id,))
                 result = cursor.fetchone()
@@ -120,6 +140,8 @@ class WalletWindow(ctk.CTkToplevel):
                 self.amount_entry.delete(0, "end")
                 self.card_entry.delete(0, "end")
                 self.cvv_entry.delete(0, "end")
+
+                self.destroy()  # Close the wallet window after successful transaction
         except Error as e:
             messagebox.showerror("Database Error", f"An error occurred: {e}")
         finally:
