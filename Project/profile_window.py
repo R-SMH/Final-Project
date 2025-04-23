@@ -23,7 +23,8 @@ class ProfileWindow(ctk.CTkToplevel):
         self.user_data = user_data
         self.on_save = on_save
         self.edit_mode = False
-        self.profile_image_path = "assets/profile.png"
+        self.profile_image_path = user_data.get("profile_image_path", "assets/profile.png")
+        self._save_success_shown = False  # Initialize the flag here
 
         self.container = ctk.CTkFrame(self, corner_radius=10)
         self.container.pack(padx=20, pady=20, fill="both", expand=True)
@@ -70,17 +71,24 @@ class ProfileWindow(ctk.CTkToplevel):
 
     def load_profile_image(self):
         try:
+            print(f"Loading profile image from: {self.profile_image_path}")  # Debugging
             original_img = Image.open(self.profile_image_path).resize((200, 200))
             rounded_img = round_corners(original_img, radius=15)
             self.profile_image = ctk.CTkImage(rounded_img, size=(200, 200))
             self.image_label = ctk.CTkLabel(self.image_frame, image=self.profile_image, text="")
             self.image_label.pack()
-        except Exception:
+        except FileNotFoundError:
+            print(f"Image not found at: {self.profile_image_path}")  # Debugging
             self.image_label = ctk.CTkLabel(self.image_frame, text="[Image Not Found]", font=("Arial", 14, "italic"))
             self.image_label.pack()
-
+        except Exception as e:
+            print(f"Error loading image: {e}")  # Debugging
+            self.image_label = ctk.CTkLabel(self.image_frame, text="[Error Loading Image]", font=("Arial", 14, "italic"))
+            self.image_label.pack()
+            
     def toggle_edit_mode(self):
         if not self.edit_mode:
+            # Enable edit mode
             self.edit_mode = True
             for key in ("username", "first_name", "last_name"):
                 self.entries[key].configure(state="normal")
@@ -88,6 +96,7 @@ class ProfileWindow(ctk.CTkToplevel):
             self.image_label.bind("<Button-1>", self.change_profile_picture)
             self.action_button.configure(text="Save Changes")
         else:
+            # Save changes
             try:
                 for key, entry in self.entries.items():
                     val = entry.get()
@@ -96,10 +105,15 @@ class ProfileWindow(ctk.CTkToplevel):
                     self.user_data[key] = val
 
                 if self.on_save:
+                    print("on_save callback triggered")  # Debugging
                     self.on_save(self.user_data)
 
-                messagebox.showinfo("Success", "Profile updated successfully!")
+                # Display success message only once
+                if not self._save_success_shown:
+                    messagebox.showinfo("Success", "Profile updated successfully!")
+                    self._save_success_shown = True
 
+                # Update UI
                 self.title(f"{self.user_data.get('username', 'User')}'s Profile")
                 self.title_label.configure(text=f"{self.user_data.get('username', 'User')}'s Profile")
 
@@ -119,8 +133,10 @@ class ProfileWindow(ctk.CTkToplevel):
         )
         if file_path:
             self.profile_image_path = file_path
+            self.user_data["profile_image_path"] = file_path  # Update the user data
             self.image_label.destroy()
             self.load_profile_image()
+
 
 if __name__ == "__main__":
     root = ctk.CTk()

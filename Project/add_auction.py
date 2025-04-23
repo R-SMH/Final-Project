@@ -53,11 +53,21 @@ class Add_Auction_Window(ctk.CTkToplevel):
                         auctions = json.load(f)
                 except FileNotFoundError:
                     auctions = []
+                
+                try:
+                    with open("all_auctions.json", "r") as f:
+                        all_auctions = json.load(f)
+                except FileNotFoundError:
+                    all_auctions = []
 
                 auctions.append(data)
+                all_auctions.append(data)
 
                 with open("sample_data.json", "w") as f:
                     json.dump(auctions, f, indent=4)
+                
+                with open("all_auctions.json", "w") as f:
+                    json.dump(all_auctions, f, indent=4)
             # ========== Database Connection Using JSON - For Testing Purposes ==========
 
 

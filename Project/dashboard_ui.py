@@ -6,11 +6,12 @@ from wallet_ui import *  # Assuming wallet_ui.py contains the WalletWindow class
 from profile_window import ProfileWindow
 
 
-current_balance = 1000  # Placeholder for current balance, replace with actual value
+current_balance = 0  # Placeholder for current balance, replace with actual value
 
 class Dashboard(ctk.CTk):
-    def __init__(self, user_id=None):
+    def __init__(self, user_id):
         super().__init__()
+        self.user_id = user_id
         self.current_balance = current_balance 
         self.title("Dashboard")
         self.geometry("1200x600")
@@ -114,7 +115,13 @@ class Dashboard(ctk.CTk):
 
         self.load_home_view(user_id)
         
-    def load_home_view(self, user_id = None):
+    def load_home_view(self, user_id=None):
+    # Retain the existing user_id if not explicitly passed
+        if user_id is not None:
+            self.user_id = user_id
+
+        # Debugging: Print the current user_id
+        print(f"Loading Home View for user_id={self.user_id}")
 
         # Clear previous content first (if needed)
         for widget in self.winfo_children():
@@ -123,7 +130,7 @@ class Dashboard(ctk.CTk):
                     info = child.grid_info()
                     if int(info.get("column", -1)) == 1 and int(info.get("row", -1)) >= 1:
                         child.grid_forget()
-            
+
         self.summary_label = ctk.CTkLabel(master=self.main_frame, text="Summary", font=("Arial", 18, "bold"))
         self.summary_label.grid(row=1, column=1, sticky="nw", padx=10, pady=(10, 0))
 
@@ -134,15 +141,7 @@ class Dashboard(ctk.CTk):
         self.summary_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
         self.summary_frame.grid_rowconfigure(0, weight=1)
 
-        """
-        def Caden_func(username):
-            usm = username
-            return list((current_balance, 5, 3, 1500))
-            """
-        
         # Call the function to get summary data
-        # summary_data = Caden_func(user_id)
-        self.user_id = user_id
         summary_data = self.get_summary_data(self.user_id)
 
         self.display_data = [
@@ -159,13 +158,12 @@ class Dashboard(ctk.CTk):
             card.grid(row=0, column=i, padx=10, pady=10, sticky="nsew")
 
             ctk.CTkLabel(card, text=label, font=("Arial", 14)).pack(pady=(10, 5))
-            
+
             if label == "Balance":
                 self.balance_summary_label = ctk.CTkLabel(card, text=value, font=("Arial", 18, "bold"))
                 self.balance_summary_label.pack(expand=True)
             else:
                 ctk.CTkLabel(card, text=value, font=("Arial", 18, "bold")).pack(expand=True)
-
         self.auction_section = ctk.CTkFrame(master=self.main_frame, fg_color="transparent", width=828 )
         self.auction_section.grid(row=3, column=1, sticky="nsw", padx=5, pady=(10, 20))
         self.auction_section.grid_rowconfigure(1, weight=1)
@@ -302,8 +300,8 @@ class Dashboard(ctk.CTk):
             Add_Auction_Window(self, on_submit=self.render_auction_cards)
             
     def open_wallet_ui(self):
-            Wallet = WalletWindow(self, current_balance=self.current_balance, on_balance_update=self.update_balance)
-            Wallet.grab_set()
+            Wallet = WalletWindow(self, user_id=self.user_id, current_balance=self.current_balance, on_balance_update=self.update_balance)
+            Wallet.mainloop()
             
     def get_summary_data(self, username):
         return [self.current_balance, 5, 3, 1500]  # Use instance variable!
@@ -322,30 +320,70 @@ class Dashboard(ctk.CTk):
             return json.load(f)
             
     def open_profile_window_func(self):
-
-        user_data = {
-            "username": "Shuvo",
-            "user_id": "123456",
-            "first_name": "Shreyastha",
-            "last_name": "Banik",
-            "dob": "2006-03-10",
-            "balance": self.current_balance
-        }
         try:
-            with open("profile_data.json", "r") as f:
-                saved_data = json.load(f)
-            user_data.update(saved_data)
-        except FileNotFoundError:
-            pass
+            conn = mysql.connector.connect(
+                host="138.47.137.116",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = conn.cursor(dictionary=True)
+            query = """
+                SELECT username, user_id, first_name, last_name, dob, balance, imagelink
+                FROM Users WHERE user_id = %s
+            """
+            cursor.execute(query, (self.user_id,))
+            user_data = cursor.fetchone()
 
-        def handle_profile_save(updated_data):
-            self.current_balance = updated_data["balance"]
-            if hasattr(self, "balance_summary_label"):
-                self.balance_summary_label.configure(text=f"$ {self.current_balance:.2f}")
-            print("Profile updated:", updated_data)
+            if not user_data:
+                messagebox.showerror("Error", "User data not found.")
+                return
 
-        ProfileWindow(self, user_data, on_save=handle_profile_save).grab_set()
+            # Ensure the image path is included in the user_data dictionary
+            user_data["profile_image_path"] = user_data.get("imagelink", "assets/profile.png")
 
+        except mysql.connector.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred: {e}")
+            return
+        finally:
+            if conn.is_connected():
+                conn.close()
+
+        # Pass the handle_profile_save method to ProfileWindow
+        ProfileWindow(self, user_data, on_save=self.handle_profile_save).grab_set()
+
+    def handle_profile_save(self, updated_data):
+        try:
+            print("Saving the following data to the database:", updated_data)  # Debugging
+            conn = mysql.connector.connect(
+                host="138.47.137.116",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = conn.cursor()
+            update_query = """
+                UPDATE Users
+                SET username = %s, first_name = %s, last_name = %s, dob = %s, balance = %s, imagelink = %s
+                WHERE user_id = %s
+            """
+            cursor.execute(update_query, (
+                updated_data["username"],
+                updated_data["first_name"],
+                updated_data["last_name"],
+                updated_data["dob"],
+                updated_data["balance"],
+                updated_data["profile_image_path"],  # Ensure this matches the key in updated_data
+                self.user_id
+            ))
+            conn.commit()
+            print("Profile updated successfully in the database.")  # Debugging
+        except mysql.connector.Error as e:
+            print(f"Database Error: {e}")  # Debugging
+            messagebox.showerror("Database Error", f"An error occurred while saving: {e}")
+        finally:
+            if conn.is_connected():
+                conn.close()
     def render_auction_cards(self):
         for widget in self.scrollable_list.winfo_children():
             widget.destroy()
