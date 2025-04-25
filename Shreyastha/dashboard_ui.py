@@ -2,11 +2,14 @@ import customtkinter as ctk
 from PIL import Image
 import os
 import json
-from wallet_ui import *  # Assuming wallet_ui.py contains the WalletWindow class
+from wallet import *  # Assuming wallet_ui.py contains the WalletWindow class
 from profile_window import ProfileWindow
+from auction_button import create_auction_button
+from bidpopup_ui import open_bid_popup
 
 
 current_balance = 0  # Placeholder for current balance, replace with actual value
+total_spent=1000
 
 class Dashboard(ctk.CTk):
     def __init__(self, user_id):
@@ -15,6 +18,8 @@ class Dashboard(ctk.CTk):
         self.current_balance = current_balance 
         self.title("Dashboard")
         self.geometry("1200x600")
+        self.fetch_total_spent()
+        self.fetch_user_balance()
         self.main_frame = ctk.CTkFrame(master=self)
         self.main_frame.pack(fill="both", expand=True)
         self.main_frame.grid_columnconfigure(0, weight=0)   # Sidebar
@@ -64,7 +69,7 @@ class Dashboard(ctk.CTk):
 
 
         buttons = [
-            "Expiring Auctions", "Silent Auction", "Mystery Auction",
+             "Silent Auction"
         ]
         
         ctk.CTkButton(
@@ -74,8 +79,7 @@ class Dashboard(ctk.CTk):
                 anchor="w",
                 command = self.load_home_view
             ).pack(pady=3, padx=(5, 5))
-
-
+        
         auction_btn = ctk.CTkButton(
                 master=scrollable_frame,
                 text="Auction",
@@ -83,9 +87,19 @@ class Dashboard(ctk.CTk):
                 anchor="w",
                 command=self.load_auction_view  # Corrected function call
             )
+
             
         auction_btn.pack(pady=3, padx=(5, 5))
         
+        mystery_auction_btn = ctk.CTkButton(
+                master=scrollable_frame,
+                text="Mystery Auction",
+                width=130,
+                anchor="w",
+                command=self.load_mystery_auction_view  # Corrected function call
+            )
+        
+        mystery_auction_btn.pack(pady=3, padx=(5, 5))
         
         for bt in buttons:
             ctk.CTkButton(
@@ -116,20 +130,14 @@ class Dashboard(ctk.CTk):
         self.load_home_view(user_id)
         
     def load_home_view(self, user_id=None):
-    # Retain the existing user_id if not explicitly passed
         if user_id is not None:
             self.user_id = user_id
 
-        # Debugging: Print the current user_id
-        print(f"Loading Home View for user_id={self.user_id}")
-
-        # Clear previous content first (if needed)
-        for widget in self.winfo_children():
-            if isinstance(widget, ctk.CTkFrame):
-                for child in widget.winfo_children():
-                    info = child.grid_info()
-                    if int(info.get("column", -1)) == 1 and int(info.get("row", -1)) >= 1:
-                        child.grid_forget()
+        # Clear any previously rendered widgets on the right
+        for widget in self.main_frame.grid_slaves():
+            info = widget.grid_info()
+            if int(info["column"]) == 1 and int(info["row"]) >= 1:
+                widget.destroy()
 
         self.summary_label = ctk.CTkLabel(master=self.main_frame, text="Summary", font=("Arial", 18, "bold"))
         self.summary_label.grid(row=1, column=1, sticky="nw", padx=10, pady=(10, 0))
@@ -137,63 +145,50 @@ class Dashboard(ctk.CTk):
         self.summary_frame = ctk.CTkFrame(master=self.main_frame, height=100)
         self.summary_frame.grid(row=2, column=1, sticky="new", padx=10, pady=(5, 0))
         self.summary_frame.grid_propagate(False)
-        self.summary_frame.configure(height=100)
         self.summary_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-        self.summary_frame.grid_rowconfigure(0, weight=1)
 
-        # Call the function to get summary data
         summary_data = self.get_summary_data(self.user_id)
 
         self.display_data = [
-            ["Balance", f"$ {summary_data[0]}"],
-            ["Active Bids", f"{summary_data[1]}"],
-            ["Auctions Won", f"{summary_data[2]}"],
-            ["Total Spent", f"$ {summary_data[3]}"]
+            ("Balance", f"$ {self.current_balance:.2f}"),
+            ("Active Bids", f"{summary_data[1]}"),
+            ("Auctions Won", f"{summary_data[2]}"),
+            ("Total Spent", f"$ {self.total_spent:.2f}")
         ]
 
-        self.balance_summary_label = None  # Add this to store the reference
-
+        self.balance_summary_label = None
         for i, (label, value) in enumerate(self.display_data):
             card = ctk.CTkFrame(master=self.summary_frame, corner_radius=10)
             card.grid(row=0, column=i, padx=10, pady=10, sticky="nsew")
-
             ctk.CTkLabel(card, text=label, font=("Arial", 14)).pack(pady=(10, 5))
-
             if label == "Balance":
                 self.balance_summary_label = ctk.CTkLabel(card, text=value, font=("Arial", 18, "bold"))
                 self.balance_summary_label.pack(expand=True)
             else:
                 ctk.CTkLabel(card, text=value, font=("Arial", 18, "bold")).pack(expand=True)
-        self.auction_section = ctk.CTkFrame(master=self.main_frame, fg_color="transparent", width=828 )
-        self.auction_section.grid(row=3, column=1, sticky="nsw", padx=5, pady=(10, 20))
+
+        # Auction + Notification Section
+        self.auction_section = ctk.CTkFrame(master=self.main_frame, fg_color="transparent")
+        self.auction_section.grid(row=3, column=1, sticky="nsew", padx=10, pady=10)
+        self.auction_section.grid_columnconfigure(0, weight=4)
+        self.auction_section.grid_columnconfigure(1, weight=2)
         self.auction_section.grid_rowconfigure(1, weight=1)
-        self.auction_section.grid_columnconfigure(0, weight=1)
-        self.auction_section.grid_columnconfigure(1, weight=0)
-        self.auction_section.grid_propagate(False) 
-        self.main_frame.grid_rowconfigure(3, weight=1)  # Let row 3 expand
-        self.main_frame.grid_columnconfigure(1, weight=1)  # Let column 1 expand
 
-        """
-        self.content_wrapper = ctk.CTkFrame(master=self.auction_section, fg_color="red", width=800)
-        self.content_wrapper.grid(row=1, column=0, sticky="n", pady=(0, 10))
-        self.content_wrapper.grid_propagate(1)
-        """
         self.auction_label = ctk.CTkLabel(master=self.auction_section, text="My Auctions", font=("Arial", 18, "bold"))
-        self.auction_label.grid(row=0, column=0, sticky="w", pady=(0, 5), padx=5)
+        self.auction_label.grid(row=0, column=0, sticky="w", padx=5)
 
-        # Add Auction Button
         self.add_auction_btn = ctk.CTkButton(
             master=self.auction_section,
             text="Add Auction",
             width=60,
             height=30,
             corner_radius=8,
-            command=self.open_add_item_window  # Replace with your actual function
+            command=self.open_add_item_window
         )
-        self.add_auction_btn.grid(row=0, column=0, sticky="e", pady=(0, 0), padx=(0, 10))
+        self.add_auction_btn.grid(row=0, column=1, sticky="e", padx=10)
 
-        self.scroll_container = ctk.CTkFrame(master=self.auction_section, fg_color="transparent")
-        self.scroll_container.grid(row=1, column=0, sticky="nsew")
+        self.scroll_container = ctk.CTkFrame(master=self.auction_section)
+        self.scroll_container.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
         self.scroll_container.grid_rowconfigure(0, weight=1)
         self.scroll_container.grid_columnconfigure(0, weight=1)
 
@@ -202,19 +197,87 @@ class Dashboard(ctk.CTk):
 
         self.scrollable_list = ctk.CTkFrame(master=self.auction_canvas)
         self.scroll_window = self.auction_canvas.create_window((0, 0), window=self.scrollable_list, anchor="nw")
-        self.scrollable_list.bind(
-            "<Configure>", lambda e: self.auction_canvas.configure(scrollregion=self.auction_canvas.bbox("all"))
-        )
+
+        self.scrollable_list.bind("<Configure>", lambda e: self.auction_canvas.configure(scrollregion=self.auction_canvas.bbox("all")))
+
         self.auction_canvas.configure(yscrollcommand=self.auction_scrollbar.set)
-        self.auction_canvas.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        self.auction_canvas.grid(row=0, column=0, sticky="nsew")
         self.auction_scrollbar.grid(row=0, column=1, sticky="ns")
 
-        # Uncomment this function if you want to use it for loading auctions
-        # def Caden_will_use_this_for_my_auctions(self, user_id):
-        #     with open("sample_data.json", "r") as f:
-        #         return json.load(f)
+        # NOTIFICATION PANEL
+        self.notification_panel = ctk.CTkFrame(master=self.auction_section, fg_color="#3a3a3a", corner_radius=8)
+        self.notification_panel.grid(row=1, column=1, sticky="nsew")
+        self.notification_panel.grid_columnconfigure(0, weight=1)
+        self.notification_panel.grid_rowconfigure(1, weight=1)
+
+        ctk.CTkLabel(self.notification_panel, text="Notifications", font=("Arial", 16, "bold")).grid(row=0, column=0, pady=10, padx=10, sticky="w")
+
+        self.notification_list = ctk.CTkScrollableFrame(self.notification_panel, fg_color="#2b2b2b", corner_radius=5)
+        self.notification_list.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+
+        sample_notifications = [
+            "✅ You won the 'Smartwatch' auction!",
+            "❌ You were outbid on 'Vintage Camera'.",
+            "💸 You added $500 to your wallet.",
+            "🔔 Someone bid on your 'Headphones' listing!"
+        ]
+
+        for note in sample_notifications:
+            ctk.CTkLabel(master=self.notification_list, text=note, anchor="w", justify="left", wraplength=400).pack(anchor="w", pady=3)
 
         self.render_auction_cards()
+
+    def fetch_user_balance(self):
+        try:
+            conn = mysql.connector.connect(
+                host="138.47.140.139",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = conn.cursor()
+            query = "SELECT balance FROM Users WHERE user_id = %s"
+            cursor.execute(query, (self.user_id,))
+            result = cursor.fetchone()
+
+            if result:
+                self.current_balance = float(result[0])  # Update the current balance
+            else:
+                self.current_balance = 0.00  # Default to 0 if no balance is found
+
+            print(f"Fetched balance for user_id={self.user_id}: {self.current_balance}")  # Debugging
+
+        except mysql.connector.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred while fetching the balance: {e}")
+        finally:
+            if conn.is_connected():
+                conn.close()
+    def fetch_total_spent(self):
+        try:
+            conn = mysql.connector.connect(
+                host="138.47.140.139",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = conn.cursor()
+            query = "SELECT totalspent FROM wallet WHERE user_id = %s"
+            cursor.execute(query, (self.user_id,))
+            result = cursor.fetchone()
+
+            if result:
+                self.total_spent = float(result[0])  # Update the current balance
+            else:
+                self.total_spent = 0.00  # Default to 0 if no balance is found
+
+            print(f"Fetched totalspent for user_id={self.user_id}: {self.current_balance}")  # Debugging
+
+        except mysql.connector.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred while fetching the balance: {e}")
+        finally:
+            if conn.is_connected():
+                conn.close()
+
 
 #=========================================================================================================================
     def load_auction_view(self):
@@ -278,7 +341,7 @@ class Dashboard(ctk.CTk):
         ctk.CTkLabel(scroll_frame, text="My Auctions", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="w")
         self.my_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         self.my_auction_grid.pack(anchor="nw")
-        self.render_cards(my_auctions, self.my_auction_grid, columns=6)
+        self.render_cards(my_auctions, self.my_auction_grid, columns=5)
 
 
         # Separator
@@ -286,12 +349,62 @@ class Dashboard(ctk.CTk):
 
 
         ctk.CTkLabel(scroll_frame, text="All Auctions", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="w")
-        my_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-        my_auction_grid.pack(anchor="nw")
-        self.render_cards(all_auctions, my_auction_grid, columns=6)
+        self.my_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        self.my_auction_grid.pack(anchor="nw")
+        self.render_cards(all_auctions, self.my_auction_grid, columns=5)
 
-        # all_auctions = self.load_all_auctions()
+        #all_auctions = self.load_all_auctions()
 
+    def load_mystery_auction_view(self):
+        # Step 1: Clear previous content on right side
+        
+        for widget in self.winfo_children():
+            if isinstance(widget, ctk.CTkFrame):
+                for child in widget.winfo_children():
+                    info = child.grid_info()
+                    if int(info.get("column", -1)) == 1 and int(info.get("row", -1)) >= 1:
+                        child.grid_forget()
+        
+
+        # Step 2: Auction view container
+        self.mystery_auction_view = ctk.CTkFrame(master = self.main_frame, fg_color="#2b2b2b", width=800)
+        self.mystery_auction_view.grid(row=1, column=1, rowspan=4, sticky="nsew", padx=10, pady=10)
+        self.mystery_auction_view.grid_columnconfigure(0, weight=1) 
+        self.mystery_auction_view.grid_rowconfigure(0, weight=0)
+        self.mystery_auction_view.grid_rowconfigure(1, weight=1)
+
+        # Step 3: Scrollable canvas
+        self.canvas = ctk.CTkCanvas(self.mystery_auction_view, highlightthickness=0, bg="#2b2b2b")
+        scrollbar = ctk.CTkScrollbar(master=self.mystery_auction_view, orientation="vertical", command=self.canvas.yview,)
+        scroll_frame = ctk.CTkFrame(master=self.mystery_auction_view) # This frame will hold the scrollable content
+        scroll_window = self.canvas.create_window((0, 0), window=scroll_frame, anchor="nw") # This creates a window in the canvas
+
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.grid(row=1, column=0, sticky="nsew") 
+        scrollbar.grid(row=1, column=1, sticky="ns")
+
+
+        scroll_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(scroll_window, width=e.width))
+        # self.canvas.itemconfig(self.auction_view, width=800)
+        # self.canvas.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(-1 * int(e.delta / 120), "units"))
+
+
+        # Step 4: Load auction data
+
+        all_mystery_auctions = self.load_all_mystery_auctions()
+
+
+        ctk.CTkLabel(scroll_frame, text="All Mystery Auctions", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="w")
+        my_mystery_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        my_mystery_auction_grid.pack(anchor="nw")
+        self.mystery_render_cards(all_mystery_auctions, my_mystery_auction_grid, columns=5)
+
+        # all_mystery_auctions = self.load_all_mystery_auctions()
+
+
+#=========================================================================================================================
+        
 
 #=========================================================================================================================
         
@@ -301,15 +414,25 @@ class Dashboard(ctk.CTk):
             
     def open_wallet_ui(self):
             Wallet = WalletWindow(self, user_id=self.user_id, current_balance=self.current_balance, on_balance_update=self.update_balance)
-            Wallet.mainloop()
+            Wallet.get_set()
             
     def get_summary_data(self, username):
         return [self.current_balance, 5, 3, 1500]  # Use instance variable!
 
-    def update_balance(self, new_balance):
+    def update_balance(self, new_balance, added_amount=0):
+        previous_balance = self.current_balance
         self.current_balance = new_balance
-        self.balance_summary_label.configure(text=f"$ {new_balance:.2f}")
-        self.display_data[0][1] = f"$ {new_balance:.2f}"
+
+        if self.balance_summary_label:
+            self.balance_summary_label.configure(text=f"$ {new_balance:.2f}")
+
+        if added_amount > 0:
+            self.add_notification(f"💰 You added ${added_amount:.2f} to your wallet.")
+        elif new_balance < previous_balance:
+            self.add_notification(f"📉 You spent ${previous_balance - new_balance:.2f}.")
+
+
+
 
     def load_auctions(self):
         with open("sample_data.json", "r") as f:
@@ -318,11 +441,69 @@ class Dashboard(ctk.CTk):
     def load_all_auctions(self):
         with open("all_auctions.json", "r") as f:
             return json.load(f)
+    
+    def load_all_mystery_auctions(self):
+        with open("all_mystery_auctions.json", "r") as f:
+            return json.load(f)
+        
+    def render_mystery_auction_cards(self):
+        for widget in self.scrollable_list.winfo_children():
+            widget.destroy()
+
+        sample_auctions = self.load_mystery_auctions()
+        columns = 3
+        
+        for index, auction in enumerate(sample_auctions):
+            row = index // columns
+            col = index % columns
+
+            card = ctk.CTkFrame(master=self.scrollable_list, width=250, height=280, corner_radius=10)
+            card.grid(row=row, column=col, padx=10, pady=5)
+            card.grid_propagate(False)
+
+            if "image" in auction and os.path.exists(auction["image"]):
+                auction_image = ctk.CTkImage(Image.open(auction["image"]), size=(230, 120))
+                image_label = ctk.CTkLabel(card, image=auction_image, text="")
+                image_label.image = auction_image
+            else:
+                image_label = ctk.CTkLabel(card, text="[Image Here]", width=230, height=120, fg_color="#444")
+
+            image_label.pack(pady=(10, 5), padx=10)
+
+            ctk.CTkLabel(card, text=f"Current: {auction['price']}", font=("Arial", 14)).pack(anchor="w", padx=10)
+            ctk.CTkLabel(card, text=f"Time Left: {auction['time_left']}", font=("Arial", 12)).pack(anchor="w", padx=10)
+            ctk.CTkButton(card, text="Bid Now", command=lambda: "bid now clicked").pack(pady=(5, 10))
+    
+    def mystery_render_cards(self, auctions, parent_frame, columns=4):
+        
+        for widget in parent_frame.winfo_children():
+            widget.destroy()
+        
+        for i, auction in enumerate(auctions):
+            row = i // columns
+            col = i % columns
+
+            card = ctk.CTkFrame(master=parent_frame, width=250, height=280, corner_radius=10, fg_color="#3b3b39")
+            card.grid(row=row, column=col, padx=10, pady=5)
+            card.grid_propagate(False) #
+            try:
+                if "image" in auction and os.path.exists(auction["image"]):
+                    img = ctk.CTkImage(Image.open(auction["image"]), size=(200, 100))
+                    image_label = ctk.CTkLabel(card, image=img, text="")
+                    image_label.image = img
+                    image_label.pack(pady=(10, 5))
+            except:
+                ctk.CTkLabel(card, text="[Image Here]", width=200, height=100, fg_color="#444").pack(pady=(10, 5))
+
+            ctk.CTkLabel(card, text=f"Price: {auction['price']}", font=("Arial", 12)).pack(anchor="w", padx=10)
+            ctk.CTkLabel(card, text=f"Time Left: {auction['time_left']}", font=("Arial", 10)).pack(anchor="w", padx=10)
+            ctk.CTkButton(card, text="Bid Now", command=lambda: "bid now clicked").pack(pady=(5, 10))
+
             
     def open_profile_window_func(self):
         try:
             conn = mysql.connector.connect(
-                host="138.47.137.116",
+                host="138.47.140.139",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -356,7 +537,7 @@ class Dashboard(ctk.CTk):
         try:
             print("Saving the following data to the database:", updated_data)  # Debugging
             conn = mysql.connector.connect(
-                host="138.47.137.116",
+                host="138.47.140.139",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -411,7 +592,7 @@ class Dashboard(ctk.CTk):
             ctk.CTkLabel(card, text=auction["Name"], font=("Arial", 14, "bold")).pack(anchor="w", padx=10)
             ctk.CTkLabel(card, text=f"Current: {auction['price']}", font=("Arial", 14)).pack(anchor="w", padx=10)
             ctk.CTkLabel(card, text=f"Time Left: {auction['time_left']}", font=("Arial", 12)).pack(anchor="w", padx=10)
-            ctk.CTkButton(card, text="Bid Now", command=lambda: "bid now clicked").pack(pady=(5, 10))
+            ctk.CTkButton(card, text="Bid Now", command=lambda a=auction: open_bid_popup(self, a, on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['Name']}'"))).pack(pady=(5, 10))   #bid now button
 
 # ------------------------------------------------------------------------
     def render_cards(self, auctions, parent_frame, columns=4):
@@ -426,11 +607,12 @@ class Dashboard(ctk.CTk):
             card = ctk.CTkFrame(master=parent_frame, width=250, height=280, corner_radius=10, fg_color="#3b3b39")
             card.grid(row=row, column=col, padx=10, pady=5)
             card.grid_propagate(False) #
+            
             if "image" in auction and os.path.exists(auction["image"]):
-                    img = ctk.CTkImage(Image.open(auction["image"]), size=(200, 100))
-                    image_label = ctk.CTkLabel(card, image=img, text="")
-                    image_label.image = img
-                    image_label.pack(pady=(10, 5))
+                img = ctk.CTkImage(Image.open(auction["image"]), size=(200, 100))
+                image_label = ctk.CTkLabel(card, image=img, text="")
+                image_label.image = img
+                image_label.pack(pady=(10, 5))
             else:
                 ctk.CTkLabel(card, text="[Image Here]", width=200, height=100, fg_color="#444").pack(pady=(10, 5))
 
@@ -478,8 +660,42 @@ class Dashboard(ctk.CTk):
 
         self.render_cards(filtered_auctions, self.my_auction_grid) if query != "" else self.load_self.auction_view()
         """
+    def add_notification(self, message):
+        if hasattr(self, 'notification_list'):
+            # Create a container frame for the message + delete button
+            notif_frame = ctk.CTkFrame(self.notification_list, fg_color="transparent")
+            notif_frame.pack(fill="x", pady=2, padx=5)
+
+            # Message label
+            notif_label = ctk.CTkLabel(
+                master=notif_frame,
+                text=message,
+                anchor="w",
+                justify="left",
+                wraplength=350,
+                font=("Arial", 13)
+            )
+            notif_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+            # Delete button
+            delete_btn = ctk.CTkButton(
+                master=notif_frame,
+                text="❌",
+                width=28,
+                height=28,
+                font=("Arial", 12),
+                fg_color="#4a4a4a",
+                hover_color="#d13b3b",
+                command=notif_frame.destroy
+            )
+            delete_btn.pack(side="right", padx=2)
+            print(f"[DEBUG] Adding notification: {message}")
+
+
+
+
 if __name__ == '__main__':
-    ctk.set_appearance_mode("light")
+    ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("green")
     app = Dashboard()
     app.mainloop()
