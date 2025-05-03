@@ -87,7 +87,7 @@ class RegisterWindow(ctk.CTkToplevel):
     def register_to_db(self, email, username, first, last, password, dob):
         try:
             db = mysql.connector.connect(
-                host = "138.47.140.139",
+                host = "138.47.141.200",
                 user = "otheruser",
                 passwd = "GroupProjectPassword",
                 database = "AuctionDB"

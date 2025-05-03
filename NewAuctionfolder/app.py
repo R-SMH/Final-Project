@@ -14,7 +14,7 @@ cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, si
 def Caden_will_Pass_them(username, password):
     try:
         db = mysql.connector.connect(
-            host="138.47.140.139",
+            host="138.47.226.216",
             user="otheruser",
             passwd="GroupProjectPassword",
             database="AuctionDB"
@@ -80,7 +80,7 @@ def forgot_password():
     messagebox.showinfo("Forgot Password", "Password reset instructions will be sent to your email.")
 
 # Root Login Window
-ctk.set_appearance_mode("light")  # Options: "light", "dark", "system"
+ctk.set_appearance_mode("system")  # Options: "light", "dark", "system"
 ctk.set_default_color_theme(themeColor)
 
 app = ctk.CTk()
