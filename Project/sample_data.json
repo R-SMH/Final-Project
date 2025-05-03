@@ -31,5 +31,11 @@
         "price": "xcv",
         "time_left": "9h",
         "image": "D:/Classes/CustomTkinter/Project/assets/car.jpg"
+    },
+    {
+        "Name": "Poop",
+        "price": "1",
+        "time_left": "1",
+        "image": "C:/Users/shark/OneDrive/Pictures/Screenshots/bisc.png"
     }
 ]

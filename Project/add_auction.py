@@ -2,14 +2,14 @@ import customtkinter as ctk
 from tkinter import filedialog
 from PIL import Image
 import mysql.connector
-import json
 
 class Add_Auction_Window(ctk.CTkToplevel):
-    def __init__(self, master=None, on_submit=None):
+    def __init__(self, master=None, on_submit=None, user_id=None):
         super().__init__(master)
         self.on_submit = on_submit
+        self.user_id = user_id
         self.title("Add Auction Item")
-        self.geometry("320x300")
+        self.geometry("320x400")
         self.resizable(False, False)
         self.lift()
         self.focus_force()
@@ -24,8 +24,12 @@ class Add_Auction_Window(ctk.CTkToplevel):
         auction_duration_entry = ctk.CTkEntry(self, placeholder_text="Auction Duration (in hours)")
         auction_duration_entry.pack(pady=10)
 
+        description_entry = ctk.CTkEntry(self, placeholder_text="Item Description")
+        description_entry.pack(pady=10)
+
         image_path_var = ctk.StringVar()
 
+        
         def upload_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
             if file_path:
@@ -39,50 +43,67 @@ class Add_Auction_Window(ctk.CTkToplevel):
             name = name_entry.get()
             price = price_entry.get()
             auction_duration = auction_duration_entry.get()
+            description = description_entry.get()
             img_path = image_path_var.get()
 
 
             # ========== Database Connection Using JSON - For Testing Purposes ==========
             def save_auction_to_database(data):
-                # === Placeholder for MySQL INSERT ===
-                # Caden: Remove everything below and write something that would 
-                # save the 'data' dictionary into your database  
-
                 try:
-                    with open("sample_data.json", "r") as f:
-                        auctions = json.load(f)
-                except FileNotFoundError:
-                    auctions = []
-                
-                try:
-                    with open("all_auctions.json", "r") as f:
-                        all_auctions = json.load(f)
-                except FileNotFoundError:
-                    all_auctions = []
+                    # Establish a connection to the MySQL database
+                    connection = mysql.connector.connect(
+                        host= "138.47.137.36",
+                        user="otheruser",
+                        passwd="GroupProjectPassword",
+                        database="AuctionDB"  # Replace with your MySQL database name
+                    )
+                    cursor = connection.cursor()
 
-                auctions.append(data)
-                all_auctions.append(data)
+                    # Insert the auction data into the NormalAuction table
+                    insert_query = """
+                    INSERT INTO NormalAuction (itemName, User_ID, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(insert_query, (
+                        data["itemName"],
+                        data["user_id"],
+                        data["startingprice"],
+                        data["currentprice"],
+                        data["itemdescription"],
+                        data["auctionlength"],
+                        data["imagelink"]
+                    ))
 
-                with open("sample_data.json", "w") as f:
-                    json.dump(auctions, f, indent=4)
-                
-                with open("all_auctions.json", "w") as f:
-                    json.dump(all_auctions, f, indent=4)
+                    # Commit the transaction
+                    connection.commit()
+
+                except mysql.connector.Error as err:
+                    print(f"Error: {err}")
+                finally:
+                    if connection.is_connected():
+                        cursor.close()
+                        connection.close()
             # ========== Database Connection Using JSON - For Testing Purposes ==========
 
 
-            if name and price and auction_duration_entry:
-                # Save the auction item to the database
-                # current_auctions = load_auctions()
-                save_auction_to_database({"Name": name, "price": price, "time_left": auction_duration, "image": img_path})
-                # current_auctions.append(new_auction)
-                # save_auctions(current_auctions)
+            if name and price and auction_duration and description:
+              
+                save_auction_to_database({
+                    "itemName": name,
+                    "user_id": self.user_id,  # Use the passed user_id
+                    "startingprice": price,
+                    "currentprice": price,  # Current price matches starting price at creation
+                    "itemdescription": description,
+                    "auctionlength": auction_duration,
+                    "imagelink": img_path
+                })
                 if self.on_submit:
                     self.on_submit()  # Tell dashboard to refresh
                 self.destroy()
 
+        print("Creating Add Item button...")
         ctk.CTkButton(self, text="Add Item", command=add_item).pack(pady=20)
-
+        print("Add Item button created.")
 if __name__ == "__main__":
     app = ctk.CTk()
     app.geometry("400x500")

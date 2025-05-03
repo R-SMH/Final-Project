@@ -59,5 +59,11 @@
         "price": "1010",
         "time_left": "7",
         "image": "assets/sampleImage_1.jpg"
+    },
+    {
+        "Name": "Poop",
+        "price": "1",
+        "time_left": "1",
+        "image": "C:/Users/shark/OneDrive/Pictures/Screenshots/bisc.png"
     }
 ]
