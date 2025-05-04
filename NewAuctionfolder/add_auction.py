@@ -52,7 +52,7 @@ class Add_Auction_Window(ctk.CTkToplevel):
                 try:
                     # Establish a connection to the MySQL database
                     connection = mysql.connector.connect(
-                        host= "138.47.137.36",
+                        host= "138.47.226.216",
                         user="otheruser",
                         passwd="GroupProjectPassword",
                         database="AuctionDB"  # Replace with your MySQL database name

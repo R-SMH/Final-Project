@@ -19,7 +19,6 @@ class Dashboard(ctk.CTk):
         self.hosted_auctions = hosted_auctions
         self.title("Dashboard")
         self.geometry("1200x600")
-        self.fetch_total_spent()
         self.fetch_user_balance()
         self.main_frame = ctk.CTkFrame(master=self)
         self.main_frame.pack(fill="both", expand=True)
@@ -67,11 +66,6 @@ class Dashboard(ctk.CTk):
         # 
         sidebar_canvas.configure(width=250)
         sidebar_canvas.pack(side="left", fill="y", expand=True)
-
-
-        buttons = [
-             "Silent Auction"
-        ]
         
         ctk.CTkButton(
                 master=scrollable_frame,
@@ -101,14 +95,6 @@ class Dashboard(ctk.CTk):
             )
         
         mystery_auction_btn.pack(pady=3, padx=(5, 5))
-        
-        for bt in buttons:
-            ctk.CTkButton(
-                master=scrollable_frame,
-                text=bt,
-                width=130,
-                anchor="w"
-            ).pack(pady=3, padx=(5, 5))
 
 
         wallet_button = ctk.CTkButton(
@@ -148,14 +134,13 @@ class Dashboard(ctk.CTk):
         self.summary_frame = ctk.CTkFrame(master=self.main_frame, height=100)
         self.summary_frame.grid(row=2, column=1, sticky="new", padx=10, pady=(5, 0))
         self.summary_frame.grid_propagate(False)
-        self.summary_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        self.summary_frame.grid_columnconfigure((0, 1), weight=1)
 
         
 
         self.display_data = [
             ("Balance", f"$ {self.current_balance:.2f}"),
             ("Active Auctions", f"{self.hosted_auctions}"),
-            ("Total Spent", f"$ {self.total_spent:.2f}")
         ]
 
         self.balance_summary_label = None
@@ -217,15 +202,17 @@ class Dashboard(ctk.CTk):
         self.notification_list = ctk.CTkScrollableFrame(self.notification_panel, fg_color="#2b2b2b", corner_radius=5)
         self.notification_list.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
-        sample_notifications = [
-            "✅ You won the 'Smartwatch' auction!",
-            "❌ You were outbid on 'Vintage Camera'.",
-            "💸 You added $500 to your wallet.",
-            "🔔 Someone bid on your 'Headphones' listing!"
-        ]
+        # Load notifications from the JSON file
+        try:
+            with open("notifications.json", "r") as file:
+                notifications = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            notifications = []
 
-        for note in sample_notifications:
-            ctk.CTkLabel(master=self.notification_list, text=note, anchor="w", justify="left", wraplength=400).pack(anchor="w", pady=3)
+        self.display_notifications(notifications)
+
+
+
         my_auctions = self.fetch_my_auctions()
 
         self.render_cards(my_auctions, self.scrollable_list, columns=3)
@@ -255,31 +242,7 @@ class Dashboard(ctk.CTk):
         finally:
             if conn.is_connected():
                 conn.close()
-    def fetch_total_spent(self):
-        try:
-            conn = mysql.connector.connect(
-                host="138.47.137.36",
-                user="otheruser",
-                passwd="GroupProjectPassword",
-                database="AuctionDB"
-            )
-            cursor = conn.cursor()
-            query = "SELECT totalspent FROM wallet WHERE user_id = %s"
-            cursor.execute(query, (self.user_id,))
-            result = cursor.fetchone()
-
-            if result:
-                self.total_spent = float(result[0])  # Update the current balance
-            else:
-                self.total_spent = 0.00  # Default to 0 if no balance is found
-
-            print(f"Fetched totalspent for user_id={self.user_id}: {self.current_balance}")  # Debugging
-
-        except mysql.connector.Error as e:
-            messagebox.showerror("Database Error", f"An error occurred while fetching the balance: {e}")
-        finally:
-            if conn.is_connected():
-                conn.close()
+    
     def fetch_auctions_from_db(self):
         """Fetch auction items from the NormalAuction table."""
         try:
@@ -291,7 +254,7 @@ class Dashboard(ctk.CTk):
             )
             cursor = connection.cursor(dictionary=True)
             query = """
-                SELECT itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
+                SELECT auction_id, itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
                 FROM NormalAuction
             """
             cursor.execute(query)
@@ -316,7 +279,7 @@ class Dashboard(ctk.CTk):
             )
             cursor = connection.cursor(dictionary=True)
             query = """
-                SELECT itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
+                SELECT auction_id, itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
                 FROM NormalAuction
                 WHERE User_ID = %s
             """
@@ -331,6 +294,33 @@ class Dashboard(ctk.CTk):
                 cursor.close()
                 connection.close()
 
+    def fetch_my_bids(self):
+        """Fetch auctions where the current user has placed bids."""
+        try:
+            connection = mysql.connector.connect(
+                host="138.47.137.36",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = connection.cursor(dictionary=True)
+            query = """
+                SELECT auction_id, itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
+                FROM NormalAuction
+                WHERE bidder_id = %s
+            """
+            cursor.execute(query, (self.user_id,))
+            auctions = cursor.fetchall()
+            return auctions
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return []
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+
     def fetch_all_auctions(self):
         """Fetch all auctions."""
         try:
@@ -342,7 +332,7 @@ class Dashboard(ctk.CTk):
             )
             cursor = connection.cursor(dictionary=True)
             query = """
-                SELECT itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
+                SELECT auction_id, itemName, StartingPrice, CurrentPrice, itemDescription, Auctionlength, Imagelink
                 FROM NormalAuction
             """
             cursor.execute(query)
@@ -447,14 +437,14 @@ class Dashboard(ctk.CTk):
 
 
         # Step 4: Load auction data
-        my_auctions = self.fetch_my_auctions()
+        my_bids = self.fetch_my_bids() ###Change to fetch_my_bids when bidding logic is working
         all_auctions = self.fetch_all_auctions()
 
 
         ctk.CTkLabel(scroll_frame, text="My Auctions", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="w")
         self.my_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         self.my_auction_grid.pack(anchor="nw")
-        self.render_cards(my_auctions, self.my_auction_grid, columns=5)
+        self.render_cards(my_bids, self.my_auction_grid, columns=5)
 
 
         # Separator
@@ -728,7 +718,20 @@ class Dashboard(ctk.CTk):
             if conn.is_connected():
                 conn.close()
 
-                
+
+    def refresh_ui(self):
+        # Fetch the updated user balance
+        self.fetch_user_balance()
+
+        # Update the balance summary label
+        if hasattr(self, "balance_summary_label") and self.balance_summary_label:
+            self.balance_summary_label.configure(text=f"$ {self.current_balance:.2f}")
+            print(f"[DEBUG] Balance summary label updated to: ${self.current_balance:.2f}")
+
+        # Refresh other UI components (e.g., auction details)
+        self.load_home_view(self.user_id)
+        print("[DEBUG] UI refreshed successfully.")
+
     def render_auction_cards(self):
         for widget in self.scrollable_list.winfo_children():
             widget.destroy()
@@ -756,8 +759,18 @@ class Dashboard(ctk.CTk):
             ctk.CTkLabel(card, text=auction["itemName"], font=("Arial", 14, "bold")).pack(anchor="w", padx=10)
             ctk.CTkLabel(card, text=f"Current: {auction['StartingPrice']}", font=("Arial", 14)).pack(anchor="w", padx=10)
             ctk.CTkLabel(card, text=f"Time Left: {auction['Auctionlength']}", font=("Arial", 12)).pack(anchor="w", padx=10)
-            ctk.CTkButton(card, text="Bid Now", command=lambda a=auction: open_bid_popup(self, a, on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['Name']}'"))).pack(pady=(5, 10))   #bid now button
-
+            ctk.CTkButton(
+    card,
+    text="Bid Now",
+    command=lambda a=auction: open_bid_popup(
+        self,
+        a["auction_id"],  # Pass the auction_id instead of the entire auction dictionary
+        user_id=self.user_id,
+        on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['itemName']}'"),
+        refresh_ui=self.refresh_ui,
+        add_notification=self.add_notification
+    )
+).pack(pady=(5, 10))
 # ------------------------------------------------------------------------
     def render_cards(self, auctions, parent_frame, columns=4):
 
@@ -787,9 +800,19 @@ class Dashboard(ctk.CTk):
             # Render auction details (move these inside the loop)
             ctk.CTkLabel(card, text=auction["itemName"], font=("Arial", 14, "bold")).pack(anchor="w", padx=10)
             ctk.CTkLabel(card, text=f"Current Price: ${auction['CurrentPrice']}", font=("Arial", 12)).pack(anchor="w", padx=10)
-            ctk.CTkLabel(card, text=f"Auction Length: {auction['Auctionlength']} hours", font=("Arial", 10)).pack(anchor="w", padx=10)
-            ctk.CTkButton(card, text="Bid Now", command=lambda a=auction: open_bid_popup(self, a, on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['Name']}'"))).pack(pady=(5, 10))   #bid now button
-
+            ctk.CTkLabel(card, text=f"Auction Length: {auction['Auctionlength']}", font=("Arial", 10)).pack(anchor="w", padx=10)
+            ctk.CTkButton(
+    card,
+    text="Bid Now",
+    command=lambda a=auction: open_bid_popup(
+        self,
+        a["auction_id"],  # Pass the auction_id instead of the entire auction dictionary
+        user_id=self.user_id,
+        on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['itemName']}'"),
+        refresh_ui=self.refresh_ui,
+        add_notification=self.add_notification
+    )
+).pack(pady=(5, 10))
 # ------------------------------------------------------------------------
     def perform_search(self, query):
         """Search auctions using SQL."""
@@ -846,37 +869,75 @@ class Dashboard(ctk.CTk):
         else:
             self.render_cards(filtered_auctions, self.my_auction_grid, columns=5)
     def add_notification(self, message):
+        # Define the path to the JSON file
+        notifications_file = "notifications.json"
+
+        # Load existing notifications from the JSON file
+        try:
+            with open(notifications_file, "r") as file:
+                notifications = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            notifications = []  # If the file doesn't exist or is invalid, start with an empty list
+
+        # Add the new notification to the list
+        notifications.append(message)
+
+        # Save the updated notifications back to the JSON file
+        with open(notifications_file, "w") as file:
+            json.dump(notifications, file, indent=4)
+
+        # Display notifications from the JSON file
+        self.display_notifications(notifications)
+
+        print(f"[DEBUG] Adding notification: {message}")
+
+    def display_notifications(self, notifications):
         if hasattr(self, 'notification_list'):
-            # Create a container frame for the message + delete button
-            notif_frame = ctk.CTkFrame(self.notification_list, fg_color="transparent")
-            notif_frame.pack(fill="x", pady=2, padx=5)
+            # Clear existing notifications in the UI
+            for widget in self.notification_list.winfo_children():
+                widget.destroy()
 
-            # Message label
-            notif_label = ctk.CTkLabel(
-                master=notif_frame,
-                text=message,
-                anchor="w",
-                justify="left",
-                wraplength=350,
-                font=("Arial", 13)
-            )
-            notif_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
+            # Display each notification
+            for message in notifications:
+                # Create a container frame for the message + delete button
+                notif_frame = ctk.CTkFrame(self.notification_list, fg_color="transparent")
+                notif_frame.pack(fill="x", pady=2, padx=5)
 
-            # Delete button
-            delete_btn = ctk.CTkButton(
-                master=notif_frame,
-                text="❌",
-                width=28,
-                height=28,
-                font=("Arial", 12),
-                fg_color="#4a4a4a",
-                hover_color="#d13b3b",
-                command=notif_frame.destroy
-            )
-            delete_btn.pack(side="right", padx=2)
-            print(f"[DEBUG] Adding notification: {message}")
+                # Message label
+                notif_label = ctk.CTkLabel(
+                    master=notif_frame,
+                    text=message,
+                    anchor="w",
+                    justify="left",
+                    wraplength=350,
+                    font=("Arial", 13)
+                )
+                notif_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
+                # Delete button
+                delete_btn = ctk.CTkButton(
+                    master=notif_frame,
+                    text="❌",
+                    width=28,
+                    height=28,
+                    font=("Arial", 12),
+                    fg_color="#4a4a4a",
+                    hover_color="#d13b3b",
+                    command=lambda m=message: self.delete_notification(m, notifications)
+                )
+                delete_btn.pack(side="right", padx=2)
+    def delete_notification(self, message, notifications):
+        # Remove the notification from the list
+        notifications.remove(message)
 
+        # Save the updated notifications back to the JSON file
+        with open("notifications.json", "w") as file:
+            json.dump(notifications, file, indent=4)
+
+        # Refresh the displayed notifications
+        self.display_notifications(notifications)
+
+        print(f"[DEBUG] Deleted notification: {message}")
 
 
 if __name__ == '__main__':
