@@ -15,7 +15,7 @@ def fetch_auction_details(auction_id):
         )
         cursor = connection.cursor(dictionary=True)
         query = """
-            SELECT auction_id, itemName, CurrentPrice, StartingPrice, itemDescription, Auctionlength, Imagelink, User_ID, bidder_id
+            SELECT auction_id, itemName, CurrentPrice, StartingPrice, itemDescription, Auctionlength, imageLink, User_ID, bidder_id
             FROM NormalAuction
             WHERE auction_id = %s
         """
@@ -153,8 +153,25 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                     passwd="GroupProjectPassword",
                     database="AuctionDB"
                 )
-                cursor = connection.cursor()
+                cursor = connection.cursor(dictionary=True)
 
+
+                 # Fetch the user's current balance
+                balance_query = "SELECT balance FROM Users WHERE user_id = %s"
+                cursor.execute(balance_query, (user_id,))
+                user_data = cursor.fetchone()
+
+                if not user_data:
+                    feedback.configure(text="⚠️ Unable to fetch user balance.")
+                    return
+
+                user_balance = float(user_data["balance"])
+                print(f"[DEBUG] User balance: ${user_balance}")
+
+                # Check if the user has enough balance to place the bid
+                if user_balance < bid:
+                    feedback.configure(text=f"⚠️ Insufficient balance. Your balance is ${user_balance:.2f}.")
+                    return
                 # Step 1: Update the bidder_id to the current user's user_id
                 update_bidder_query = """
                     UPDATE NormalAuction
@@ -193,11 +210,12 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                     print(f"[DEBUG] Refunded ${current_price} to previous bidder_id {auction['bidder_id']}")
 
                     # Add a notification for the previous bidder
-                    if add_notification:
+                    if add_notification and auction["bidder_id"]:
                         notification_message = f"You've been outbid on '{auction['itemName']}'!"
-                        add_notification(notification_message)
-                        print(f"[DEBUG] Notification sent: {notification_message}")
+                        add_notification(notification_message)  # Send notification to the previous bidder
+                        print(f"[DEBUG] Outbid notification sent to bidder_id {auction['bidder_id']}: {notification_message}")
 
+            # Commit the
                 # Commit the changes to the database
                 connection.commit()
 
@@ -210,6 +228,11 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
 
                 # Notify the user and close the popup
                 feedback.configure(text="✅ Bid placed successfully!", text_color="green")
+                if add_notification:
+                    notification_message = f"✅ You successfully placed a bid of ${bid:.2f} on '{auction['itemName']}'!"
+                    add_notification(notification_message)  # Send notification to the current user
+                    print(f"[DEBUG] Bid notification sent to user_id {user_id}: {notification_message}")
+
                 if on_submit:
                     on_submit(bid)
                 if refresh_ui:
@@ -228,12 +251,13 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
 
     ctk.CTkButton(left, text="Submit Bid", command=submit_bid).grid(row=7, column=0, sticky="ew", pady=(20, 5), padx=5)
 
-    # ===== RIGHT SECTION: Image =====
+   # ===== RIGHT SECTION: Image =====
     right = ctk.CTkFrame(main_frame, fg_color="transparent")
     right.grid(row=0, column=1, sticky="nsew", padx=(0, 10), pady=10)
 
-    if "image" in auction and os.path.exists(auction["image"]):
-        img = ctk.CTkImage(Image.open(auction["image"]), size=(240, 160))
+    # Use "imageLink" instead of "image"
+    if "imageLink" in auction and os.path.exists(auction["imageLink"]):
+        img = ctk.CTkImage(Image.open(auction["imageLink"]), size=(240, 160))
         ctk.CTkLabel(right, image=img, text="").pack(expand=True)
     else:
         ctk.CTkLabel(right, text="[No Image]", width=240, height=160, fg_color="#444").pack(expand=True)

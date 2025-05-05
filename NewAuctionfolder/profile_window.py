@@ -90,7 +90,7 @@ class ProfileWindow(ctk.CTkToplevel):
         if not self.edit_mode:
             # Enable edit mode
             self.edit_mode = True
-            for key in ("first_name", "last_name"):
+            for key in ("username", "first_name", "last_name"):
                 self.entries[key].configure(state="normal")
 
             self.image_label.bind("<Button-1>", self.change_profile_picture)

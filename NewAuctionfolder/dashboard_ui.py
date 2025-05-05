@@ -766,7 +766,6 @@ class Dashboard(ctk.CTk):
         self,
         a["auction_id"],  # Pass the auction_id instead of the entire auction dictionary
         user_id=self.user_id,
-        on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['itemName']}'"),
         refresh_ui=self.refresh_ui,
         add_notification=self.add_notification
     )
@@ -808,7 +807,6 @@ class Dashboard(ctk.CTk):
         self,
         a["auction_id"],  # Pass the auction_id instead of the entire auction dictionary
         user_id=self.user_id,
-        on_submit=lambda bid: self.add_notification(f"✅ You bid ${bid:.2f} on '{a['itemName']}'"),
         refresh_ui=self.refresh_ui,
         add_notification=self.add_notification
     )
