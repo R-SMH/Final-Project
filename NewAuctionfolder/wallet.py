@@ -8,7 +8,7 @@ class WalletWindow(ctk.CTkToplevel):
     def __init__(self, master, user_id, current_balance=0, on_balance_update=None):
         super().__init__(master)
         self.title("Your Wallet")
-        self.geometry("400x400")
+        self.geometry("350x420")
         self.resizable(False, False)
         self.user_id = user_id
         self.current_balance = current_balance
