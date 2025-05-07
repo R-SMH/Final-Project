@@ -8,7 +8,7 @@ def fetch_auction_details(auction_id):
     """Fetch auction details based on auction_id."""
     try:
         connection = mysql.connector.connect(
-            host="138.47.137.36",
+            host="138.47.226.93",
             user="otheruser",
             passwd="GroupProjectPassword",
             database="AuctionDB"
@@ -69,7 +69,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
         """Fetch the owner's username based on owner_id."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.137.36",
+                host="138.47.226.93",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -92,7 +92,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
         """Fetch the username of the previous bidder based on bidder_id."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.137.36",
+                host="138.47.226.93",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -148,7 +148,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                 feedback.configure(text=f"⚠️ Must be greater than ${current_price:.2f}")
             else:
                 connection = mysql.connector.connect(
-                    host="138.47.137.36",
+                    host="138.47.226.93",
                     user="otheruser",
                     passwd="GroupProjectPassword",
                     database="AuctionDB"
