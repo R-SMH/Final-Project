@@ -209,7 +209,7 @@ class Dashboard(ctk.CTk):
     def fetch_user_balance(self):
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -236,7 +236,7 @@ class Dashboard(ctk.CTk):
         """Fetch auction items from the NormalAuction table."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -261,7 +261,7 @@ class Dashboard(ctk.CTk):
     #Fetch auctions created by the current user.
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -287,7 +287,7 @@ class Dashboard(ctk.CTk):
         """Fetch auctions where the current user has placed bids."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -314,7 +314,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -339,7 +339,7 @@ class Dashboard(ctk.CTk):
         """Fetch the count of auctions hosted by the current user."""
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -487,7 +487,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions from the database."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -512,7 +512,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions from the database."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -539,7 +539,7 @@ class Dashboard(ctk.CTk):
     def open_profile_window_func(self):
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -573,7 +573,7 @@ class Dashboard(ctk.CTk):
         try:
             print("Saving the following data to the database:", updated_data)  # Debugging
             conn = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -708,7 +708,7 @@ class Dashboard(ctk.CTk):
         try:
             # Connect to the database and perform the search
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -755,7 +755,7 @@ class Dashboard(ctk.CTk):
         """Add a notification to the database for the specified user."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -784,7 +784,7 @@ class Dashboard(ctk.CTk):
         """Display notifications from the database for the current user."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -842,7 +842,7 @@ class Dashboard(ctk.CTk):
         """Delete a notification from the database for the current user."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"

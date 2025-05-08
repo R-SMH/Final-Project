@@ -21,7 +21,7 @@ class WalletWindow(ctk.CTkToplevel):
 
         try:
             conn = mysql.connector.connect(
-                host= "138.47.226.76",
+                host= "138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -87,7 +87,7 @@ class WalletWindow(ctk.CTkToplevel):
 
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.76",
+                host="138.47.138.4",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
