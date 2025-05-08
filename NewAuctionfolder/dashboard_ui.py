@@ -85,17 +85,6 @@ class Dashboard(ctk.CTk):
 
             
         auction_btn.pack(pady=3, padx=(5, 5))
-        
-        mystery_auction_btn = ctk.CTkButton(
-                master=scrollable_frame,
-                text="Mystery Auction",
-                width=130,
-                anchor="w",
-                command=self.load_mystery_auction_view  # Corrected function call
-            )
-        
-        mystery_auction_btn.pack(pady=3, padx=(5, 5))
-
 
         wallet_button = ctk.CTkButton(
             master=scrollable_frame,
@@ -209,7 +198,7 @@ class Dashboard(ctk.CTk):
         except (FileNotFoundError, json.JSONDecodeError):
             notifications = []
 
-        self.display_notifications(notifications)
+        self.display_notifications()
 
 
 
@@ -220,7 +209,7 @@ class Dashboard(ctk.CTk):
     def fetch_user_balance(self):
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -247,7 +236,7 @@ class Dashboard(ctk.CTk):
         """Fetch auction items from the NormalAuction table."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -272,7 +261,7 @@ class Dashboard(ctk.CTk):
     #Fetch auctions created by the current user.
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -298,7 +287,7 @@ class Dashboard(ctk.CTk):
         """Fetch auctions where the current user has placed bids."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -325,7 +314,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -350,7 +339,7 @@ class Dashboard(ctk.CTk):
         """Fetch the count of auctions hosted by the current user."""
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -457,53 +446,6 @@ class Dashboard(ctk.CTk):
 
         #all_auctions = self.load_all_auctions()
 
-    def load_mystery_auction_view(self):
-        # Step 1: Clear previous content on right side
-        
-        for widget in self.winfo_children():
-            if isinstance(widget, ctk.CTkFrame):
-                for child in widget.winfo_children():
-                    info = child.grid_info()
-                    if int(info.get("column", -1)) == 1 and int(info.get("row", -1)) >= 1:
-                        child.grid_forget()
-        
-
-        # Step 2: Auction view container
-        self.mystery_auction_view = ctk.CTkFrame(master = self.main_frame, fg_color="#2b2b2b", width=800)
-        self.mystery_auction_view.grid(row=1, column=1, rowspan=4, sticky="nsew", padx=10, pady=10)
-        self.mystery_auction_view.grid_columnconfigure(0, weight=1) 
-        self.mystery_auction_view.grid_rowconfigure(0, weight=0)
-        self.mystery_auction_view.grid_rowconfigure(1, weight=1)
-
-        # Step 3: Scrollable canvas
-        self.canvas = ctk.CTkCanvas(self.mystery_auction_view, highlightthickness=0, bg="#2b2b2b")
-        scrollbar = ctk.CTkScrollbar(master=self.mystery_auction_view, orientation="vertical", command=self.canvas.yview,)
-        scroll_frame = ctk.CTkFrame(master=self.mystery_auction_view) # This frame will hold the scrollable content
-        scroll_window = self.canvas.create_window((0, 0), window=scroll_frame, anchor="nw") # This creates a window in the canvas
-
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-        self.canvas.grid(row=1, column=0, sticky="nsew") 
-        scrollbar.grid(row=1, column=1, sticky="ns")
-
-
-        scroll_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(scroll_window, width=e.width))
-        # self.canvas.itemconfig(self.auction_view, width=800)
-        # self.canvas.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(-1 * int(e.delta / 120), "units"))
-
-
-        # Step 4: Load auction data
-
-        all_mystery_auctions = self.load_all_mystery_auctions()
-
-
-        ctk.CTkLabel(scroll_frame, text="All Mystery Auctions", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="w")
-        my_mystery_auction_grid = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-        my_mystery_auction_grid.pack(anchor="nw")
-        self.mystery_render_cards(all_mystery_auctions, my_mystery_auction_grid, columns=5)
-
-        # all_mystery_auctions = self.load_all_mystery_auctions()
-
 
 #=========================================================================================================================
         
@@ -534,9 +476,9 @@ class Dashboard(ctk.CTk):
             self.balance_summary_label.configure(text=f"$ {new_balance:.2f}")
 
         if added_amount > 0:
-            self.add_notification(f"💰 You added ${added_amount:.2f} to your wallet.")
+            self.add_notification(self.user_id, f"💰 You added ${added_amount:.2f} to your wallet.")
         elif new_balance < previous_balance:
-            self.add_notification(f"📉 You spent ${previous_balance - new_balance:.2f}.")
+            self.add_notification(self.user_id, f"📉 You spent ${previous_balance - new_balance:.2f}.")
 
 
 
@@ -545,7 +487,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions from the database."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -570,7 +512,7 @@ class Dashboard(ctk.CTk):
         """Fetch all auctions from the database."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -593,69 +535,11 @@ class Dashboard(ctk.CTk):
             if connection.is_connected():
                 cursor.close()
                 connection.close()
-    
-    def load_all_mystery_auctions(self):
-        with open("all_mystery_auctions.json", "r") as f:
-            return json.load(f)
-        
-    def render_mystery_auction_cards(self):
-        for widget in self.scrollable_list.winfo_children():
-            widget.destroy()
-
-        sample_auctions = self.load_mystery_auctions()
-        columns = 3
-        
-        for index, auction in enumerate(sample_auctions):
-            row = index // columns
-            col = index % columns
-
-            card = ctk.CTkFrame(master=self.scrollable_list, width=250, height=280, corner_radius=10)
-            card.grid(row=row, column=col, padx=10, pady=5)
-            card.grid_propagate(False)
-
-            if "image" in auction and os.path.exists(auction["image"]):
-                auction_image = ctk.CTkImage(Image.open(auction["image"]), size=(230, 120))
-                image_label = ctk.CTkLabel(card, image=auction_image, text="")
-                image_label.image = auction_image
-            else:
-                image_label = ctk.CTkLabel(card, text="[Image Here]", width=230, height=120, fg_color="#444")
-
-            image_label.pack(pady=(10, 5), padx=10)
-
-            ctk.CTkLabel(card, text=f"Current: {auction['price']}", font=("Arial", 14)).pack(anchor="w", padx=10)
-            ctk.CTkLabel(card, text=f"Time Left: {auction['time_left']}", font=("Arial", 12)).pack(anchor="w", padx=10)
-            ctk.CTkButton(card, text="Bid Now", command=lambda: "bid now clicked").pack(pady=(5, 10))
-    
-    def mystery_render_cards(self, auctions, parent_frame, columns=4):
-        
-        for widget in parent_frame.winfo_children():
-            widget.destroy()
-        
-        for i, auction in enumerate(auctions):
-            row = i // columns
-            col = i % columns
-
-            card = ctk.CTkFrame(master=parent_frame, width=250, height=280, corner_radius=10, fg_color="#3b3b39")
-            card.grid(row=row, column=col, padx=10, pady=5)
-            card.grid_propagate(False) #
-            try:
-                if "image" in auction and os.path.exists(auction["image"]):
-                    img = ctk.CTkImage(Image.open(auction["image"]), size=(200, 100))
-                    image_label = ctk.CTkLabel(card, image=img, text="")
-                    image_label.image = img
-                    image_label.pack(pady=(10, 5))
-            except:
-                ctk.CTkLabel(card, text="[Image Here]", width=200, height=100, fg_color="#444").pack(pady=(10, 5))
-
-            ctk.CTkLabel(card, text=f"Price: {auction['price']}", font=("Arial", 12)).pack(anchor="w", padx=10)
-            ctk.CTkLabel(card, text=f"Time Left: {auction['time_left']}", font=("Arial", 10)).pack(anchor="w", padx=10)
-            ctk.CTkButton(card, text="Bid Now", command=lambda: "bid now clicked").pack(pady=(5, 10))
-
             
     def open_profile_window_func(self):
         try:
             conn = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -689,7 +573,7 @@ class Dashboard(ctk.CTk):
         try:
             print("Saving the following data to the database:", updated_data)  # Debugging
             conn = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -824,7 +708,7 @@ class Dashboard(ctk.CTk):
         try:
             # Connect to the database and perform the search
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -866,77 +750,121 @@ class Dashboard(ctk.CTk):
             ctk.CTkLabel(scroll_frame, text="No results found", font=("Arial", 16, "bold")).pack(pady=(10, 5), anchor="center")
         else:
             self.render_cards(filtered_auctions, self.my_auction_grid, columns=5)
-    def add_notification(self, message):
-        # Define the path to the JSON file
-        notifications_file = "notifications.json"
 
-        # Load existing notifications from the JSON file
+    def add_notification(self, user_id, message):
+        """Add a notification to the database for the specified user."""
         try:
-            with open(notifications_file, "r") as file:
-                notifications = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
-            notifications = []  # If the file doesn't exist or is invalid, start with an empty list
+            connection = mysql.connector.connect(
+                host="138.47.226.76",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = connection.cursor()
 
-        # Add the new notification to the list
-        notifications.append(message)
+            # Insert the new notification into the Notifications table
+            query = "INSERT INTO Notifications (user_id, message) VALUES (%s, %s)"
+            cursor.execute(query, (user_id, message))
+            connection.commit()
 
-        # Save the updated notifications back to the JSON file
-        with open(notifications_file, "w") as file:
-            json.dump(notifications, file, indent=4)
+            # Refresh the notifications panel if the notification is for the current user
+            if user_id == self.user_id:
+                self.display_notifications()
 
-        # Display notifications from the JSON file
-        self.display_notifications(notifications)
+            print(f"[DEBUG] Added notification for user_id {user_id}: {message}")
 
-        print(f"[DEBUG] Adding notification: {message}")
+        except mysql.connector.Error as err:
+            print(f"[ERROR] Database error while adding notification: {err}")
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
-    def display_notifications(self, notifications):
-        if hasattr(self, 'notification_list'):
-            # Clear existing notifications in the UI
-            for widget in self.notification_list.winfo_children():
-                widget.destroy()
+    def display_notifications(self):
+        """Display notifications from the database for the current user."""
+        try:
+            connection = mysql.connector.connect(
+                host="138.47.226.76",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = connection.cursor()
 
-            # Display each notification
-            for message in notifications:
-                # Create a container frame for the message + delete button
-                notif_frame = ctk.CTkFrame(self.notification_list, fg_color="transparent")
-                notif_frame.pack(fill="x", pady=2, padx=5)
+            # Fetch notifications for the user
+            query = "SELECT message FROM Notifications WHERE user_id = %s"
+            cursor.execute(query, (self.user_id,))
+            notifications = [row[0] for row in cursor.fetchall()]
 
-                # Message label
-                notif_label = ctk.CTkLabel(
-                    master=notif_frame,
-                    text=message,
-                    anchor="w",
-                    justify="left",
-                    wraplength=350,
-                    font=("Arial", 13)
-                )
-                notif_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
+            if hasattr(self, 'notification_list'):
+                # Clear existing notifications in the UI
+                for widget in self.notification_list.winfo_children():
+                    widget.destroy()
 
-                # Delete button
-                delete_btn = ctk.CTkButton(
-                    master=notif_frame,
-                    text="❌",
-                    width=28,
-                    height=28,
-                    font=("Arial", 12),
-                    fg_color="#4a4a4a",
-                    hover_color="#d13b3b",
-                    command=lambda m=message: self.delete_notification(m, notifications)
-                )
-                delete_btn.pack(side="right", padx=2)
-    def delete_notification(self, message, notifications):
-        # Remove the notification from the list
-        notifications.remove(message)
+                # Display each notification
+                for message in notifications:
+                    # Create a container frame for the message + delete button
+                    notif_frame = ctk.CTkFrame(self.notification_list, fg_color="transparent")
+                    notif_frame.pack(fill="x", pady=2, padx=5)
 
-        # Save the updated notifications back to the JSON file
-        with open("notifications.json", "w") as file:
-            json.dump(notifications, file, indent=4)
+                    # Message label
+                    notif_label = ctk.CTkLabel(
+                        master=notif_frame,
+                        text=message,
+                        anchor="w",
+                        justify="left",
+                        wraplength=350,
+                        font=("Arial", 13)
+                    )
+                    notif_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
-        # Refresh the displayed notifications
-        self.display_notifications(notifications)
+                    # Delete button
+                    delete_btn = ctk.CTkButton(
+                        master=notif_frame,
+                        text="❌",
+                        width=28,
+                        height=28,
+                        font=("Arial", 12),
+                        fg_color="#4a4a4a",
+                        hover_color="#d13b3b",
+                        command=lambda m=message: self.delete_notification(m)
+                    )
+                    delete_btn.pack(side="right", padx=2)
 
-        print(f"[DEBUG] Deleted notification: {message}")
+        except mysql.connector.Error as err:
+            print(f"[ERROR] Database error while displaying notifications: {err}")
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
+    def delete_notification(self, message):
+        """Delete a notification from the database for the current user."""
+        try:
+            connection = mysql.connector.connect(
+                host="138.47.226.76",
+                user="otheruser",
+                passwd="GroupProjectPassword",
+                database="AuctionDB"
+            )
+            cursor = connection.cursor()
+
+            # Delete the notification from the Notifications table
+            query = "DELETE FROM Notifications WHERE user_id = %s AND message = %s LIMIT 1"
+            cursor.execute(query, (self.user_id, message))
+            connection.commit()
+
+            # Refresh the displayed notifications
+            self.display_notifications()
+
+            print(f"[DEBUG] Deleted notification: {message}")
+
+        except mysql.connector.Error as err:
+            print(f"[ERROR] Database error while deleting notification: {err}")
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
 if __name__ == '__main__':
     ctk.set_appearance_mode("dark")

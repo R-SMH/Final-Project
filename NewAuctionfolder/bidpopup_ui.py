@@ -8,7 +8,7 @@ def fetch_auction_details(auction_id):
     """Fetch auction details based on auction_id."""
     try:
         connection = mysql.connector.connect(
-            host="138.47.226.93",
+            host="138.47.226.76",
             user="otheruser",
             passwd="GroupProjectPassword",
             database="AuctionDB"
@@ -69,7 +69,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
         """Fetch the owner's username based on owner_id."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -92,7 +92,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
         """Fetch the username of the previous bidder based on bidder_id."""
         try:
             connection = mysql.connector.connect(
-                host="138.47.226.93",
+                host="138.47.226.76",
                 user="otheruser",
                 passwd="GroupProjectPassword",
                 database="AuctionDB"
@@ -148,15 +148,14 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                 feedback.configure(text=f"⚠️ Must be greater than ${current_price:.2f}")
             else:
                 connection = mysql.connector.connect(
-                    host="138.47.226.93",
+                    host="138.47.226.76",
                     user="otheruser",
                     passwd="GroupProjectPassword",
                     database="AuctionDB"
                 )
                 cursor = connection.cursor(dictionary=True)
 
-
-                 # Fetch the user's current balance
+                # Fetch the user's current balance
                 balance_query = "SELECT balance FROM Users WHERE user_id = %s"
                 cursor.execute(balance_query, (user_id,))
                 user_data = cursor.fetchone()
@@ -172,6 +171,7 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                 if user_balance < bid:
                     feedback.configure(text=f"⚠️ Insufficient balance. Your balance is ${user_balance:.2f}.")
                     return
+
                 # Step 1: Update the bidder_id to the current user's user_id
                 update_bidder_query = """
                     UPDATE NormalAuction
@@ -199,6 +199,10 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                 cursor.execute(deduct_balance_query, (bid, user_id))
                 print(f"[DEBUG] Deducted ${bid} from user_id {user_id}'s balance")
 
+                # Commit the changes to the database after critical updates
+                connection.commit()
+                print("[DEBUG] Changes committed successfully.")
+
                 # Step 4: Refund the previous bidder if they were outbid
                 if auction["bidder_id"]:
                     refund_query = """
@@ -207,18 +211,35 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                         WHERE user_id = %s
                     """
                     cursor.execute(refund_query, (current_price, auction["bidder_id"]))
+                    connection.commit()  # Commit the refund transaction
                     print(f"[DEBUG] Refunded ${current_price} to previous bidder_id {auction['bidder_id']}")
 
                     # Add a notification for the previous bidder
-                    if add_notification and auction["bidder_id"]:
+                    if add_notification:
                         notification_message = f"You've been outbid on '{auction['itemName']}'!"
-                        add_notification(notification_message)  # Send notification to the previous bidder
-                        print(f"[DEBUG] Outbid notification sent to bidder_id {auction['bidder_id']}: {notification_message}")
+                        print(f"[DEBUG] Preparing to send notification to bidder_id {auction['bidder_id']}")
 
-            # Commit the
-                # Commit the changes to the database
-                connection.commit()
-
+                        try:
+                            # Insert the notification directly into the Notifications table
+                            connection = mysql.connector.connect(
+                                host="138.47.226.76",
+                                user="otheruser",
+                                passwd="GroupProjectPassword",
+                                database="AuctionDB"
+                            )
+                            cursor = connection.cursor()
+                            query = "INSERT INTO Notifications (user_id, message) VALUES (%s, %s)"
+                            cursor.execute(query, (auction["bidder_id"], notification_message))
+                            connection.commit()
+                            print(f"[DEBUG] Outbid notification sent to bidder_id {auction['bidder_id']}: {notification_message}")
+                        except mysql.connector.Error as err:
+                            print(f"[ERROR] Failed to send outbid notification: {err}")
+                        finally:
+                            if connection.is_connected():
+                                cursor.close()
+                                connection.close()
+                    else:
+                        print("[DEBUG] No refund or notification needed as the current bidder is the same as the previous bidder.")
                 # Step 5: Fetch the updated highest bidder's username
                 highest_bidder_username = fetch_previous_bidder_username(user_id)
                 print(f"[DEBUG] Highest bidder username: {highest_bidder_username}")
@@ -230,8 +251,10 @@ def open_bid_popup(parent, auction_id, user_id, on_submit=None, refresh_ui=None,
                 feedback.configure(text="✅ Bid placed successfully!", text_color="green")
                 if add_notification:
                     notification_message = f"✅ You successfully placed a bid of ${bid:.2f} on '{auction['itemName']}'!"
-                    add_notification(notification_message)  # Send notification to the current user
+                    add_notification(user_id, notification_message)  # Pass user_id and message
                     print(f"[DEBUG] Bid notification sent to user_id {user_id}: {notification_message}")
+                else:
+                    print("[ERROR] add_notification is None. Cannot send notification for bid placement.")
 
                 if on_submit:
                     on_submit(bid)

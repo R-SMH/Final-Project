@@ -14,7 +14,7 @@ cover_image = ctk.CTkImage(light_image = open_image, dark_image = open_image, si
 def Caden_will_Pass_them(username, password):
     try:
         db = mysql.connector.connect(
-            host="138.47.226.93",
+            host="138.47.226.76",
             user="otheruser",
             passwd="GroupProjectPassword",
             database="AuctionDB"
